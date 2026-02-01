@@ -1,0 +1,56 @@
+package com.othertales.common.infrastructure.web;
+
+import com.othertales.modules.identity.domain.EmailAlreadyExistsException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.net.URI;
+import java.util.List;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ProblemDetail handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problem.setType(URI.create("https://api.othertales.com/problems/email-already-exists"));
+        problem.setTitle("Email Already Registered");
+        return problem;
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                "Validation failed for one or more fields"
+        );
+        problem.setType(URI.create("https://api.othertales.com/problems/validation-error"));
+        problem.setTitle("Validation Error");
+
+        var errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> new FieldError(error.getField(), error.getDefaultMessage()))
+                .toList();
+
+        problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleGenericException(Exception ex) {
+        var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred"
+        );
+        problem.setType(URI.create("https://api.othertales.com/problems/internal-error"));
+        problem.setTitle("Internal Server Error");
+        return problem;
+    }
+
+    public record FieldError(String field, String message) {}
+}
