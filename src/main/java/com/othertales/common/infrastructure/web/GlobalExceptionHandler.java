@@ -1,6 +1,9 @@
 package com.othertales.common.infrastructure.web;
 
 import com.othertales.modules.identity.domain.EmailAlreadyExistsException;
+import com.othertales.modules.identity.domain.InvalidCredentialsException;
+import com.othertales.modules.writing.domain.InvalidProjectTitleException;
+import com.othertales.modules.writing.domain.ProjectNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -21,6 +24,39 @@ public class GlobalExceptionHandler {
         );
         problem.setType(URI.create("https://api.othertales.com/problems/email-already-exists"));
         problem.setTitle("Email Already Registered");
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ProblemDetail handleInvalidCredentials(InvalidCredentialsException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage()
+        );
+        problem.setType(URI.create("https://api.othertales.com/problems/invalid-credentials"));
+        problem.setTitle("Invalid Credentials");
+        return problem;
+    }
+
+    @ExceptionHandler(InvalidProjectTitleException.class)
+    public ProblemDetail handleInvalidProjectTitle(InvalidProjectTitleException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage()
+        );
+        problem.setType(URI.create("https://api.othertales.com/problems/invalid-project-title"));
+        problem.setTitle("Invalid Project Title");
+        return problem;
+    }
+
+    @ExceptionHandler(ProjectNotFoundException.class)
+    public ProblemDetail handleProjectNotFound(ProjectNotFoundException ex) {
+        var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage()
+        );
+        problem.setType(URI.create("https://api.othertales.com/problems/project-not-found"));
+        problem.setTitle("Project Not Found");
         return problem;
     }
 

@@ -1,17 +1,19 @@
 package com.othertales.modules.identity.infrastructure.web;
 
 import com.othertales.modules.identity.application.dto.AuthResponse;
+import com.othertales.modules.identity.application.dto.LoginRequest;
 import com.othertales.modules.identity.application.dto.RegisterRequest;
+import com.othertales.modules.identity.application.usecase.LoginUserUseCase;
 import com.othertales.modules.identity.application.usecase.RegisterUserUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.http.ProblemDetail;
 
 import java.net.URI;
 
@@ -20,9 +22,14 @@ import java.net.URI;
 public class AuthController {
 
     private final RegisterUserUseCase registerUserUseCase;
+    private final LoginUserUseCase loginUserUseCase;
 
-    public AuthController(RegisterUserUseCase registerUserUseCase) {
+    public AuthController(
+            RegisterUserUseCase registerUserUseCase,
+            LoginUserUseCase loginUserUseCase
+    ) {
         this.registerUserUseCase = registerUserUseCase;
+        this.loginUserUseCase = loginUserUseCase;
     }
 
     @PostMapping("/register")
@@ -45,6 +52,25 @@ public class AuthController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        var command = new LoginUserUseCase.Command(
+                request.email(),
+                request.password()
+        );
+
+        var user = loginUserUseCase.execute(command);
+
+        // TODO: Generate JWT token in future iteration
+        var response = new AuthResponse(
+                "token-placeholder-" + user.getId(),
+                "Bearer",
+                3600L
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/social/{provider}")
