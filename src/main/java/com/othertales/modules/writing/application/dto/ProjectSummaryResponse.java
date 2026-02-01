@@ -6,6 +6,9 @@ import java.util.UUID;
 public record ProjectSummaryResponse(
         UUID id,
         String title,
+        String genre,
+        int currentWordCount,
+        int targetWordCount,
         String status,
         Instant updatedAt
 ) {}

@@ -139,6 +139,15 @@ components:
           type: string
           maxLength: 2000
           example: A story about adventure and discovery
+        genre:
+          type: string
+          maxLength: 100
+          example: Fantasy
+        targetWordCount:
+          type: integer
+          minimum: 0
+          default: 50000
+          example: 80000
 
     ProjectResponse:
       type: object
@@ -150,6 +159,14 @@ components:
           type: string
         synopsis:
           type: string
+        genre:
+          type: string
+        currentWordCount:
+          type: integer
+          description: Current word count of the project
+        targetWordCount:
+          type: integer
+          description: Target word count goal
         coverUrl:
           type: string
           format: uri
@@ -171,6 +188,12 @@ components:
           format: uuid
         title:
           type: string
+        genre:
+          type: string
+        currentWordCount:
+          type: integer
+        targetWordCount:
+          type: integer
         status:
           type: string
           enum: [DRAFT, PUBLISHED]
