@@ -10,6 +10,9 @@ public class Project {
     private UUID userId;
     private String title;
     private String synopsis;
+    private String genre;
+    private int currentWordCount;
+    private int targetWordCount;
     private String coverUrl;
     private ProjectStatus status;
     private boolean deleted;
@@ -19,14 +22,18 @@ public class Project {
 
     private Project() {}
 
-    public static Project create(UUID userId, String title, String synopsis) {
+    public static Project create(UUID userId, String title, String synopsis, String genre, int targetWordCount) {
         validateTitle(title);
+        validateTargetWordCount(targetWordCount);
 
         var project = new Project();
         project.id = UUID.randomUUID();
         project.userId = Objects.requireNonNull(userId, "User ID is required");
         project.title = title.trim();
         project.synopsis = synopsis;
+        project.genre = genre;
+        project.currentWordCount = 0;
+        project.targetWordCount = targetWordCount;
         project.coverUrl = null;
         project.status = ProjectStatus.DRAFT;
         project.deleted = false;
@@ -41,6 +48,9 @@ public class Project {
             UUID userId,
             String title,
             String synopsis,
+            String genre,
+            int currentWordCount,
+            int targetWordCount,
             String coverUrl,
             ProjectStatus status,
             boolean deleted,
@@ -53,6 +63,9 @@ public class Project {
         project.userId = userId;
         project.title = title;
         project.synopsis = synopsis;
+        project.genre = genre;
+        project.currentWordCount = currentWordCount;
+        project.targetWordCount = targetWordCount;
         project.coverUrl = coverUrl;
         project.status = status;
         project.deleted = deleted;
@@ -73,6 +86,25 @@ public class Project {
         this.updatedAt = Instant.now();
     }
 
+    public void updateGenre(String newGenre) {
+        this.genre = newGenre;
+        this.updatedAt = Instant.now();
+    }
+
+    public void updateTargetWordCount(int newTarget) {
+        validateTargetWordCount(newTarget);
+        this.targetWordCount = newTarget;
+        this.updatedAt = Instant.now();
+    }
+
+    public void updateCurrentWordCount(int newCount) {
+        if (newCount < 0) {
+            newCount = 0;
+        }
+        this.currentWordCount = newCount;
+        this.updatedAt = Instant.now();
+    }
+
     public void publish() {
         this.status = ProjectStatus.PUBLISHED;
         this.updatedAt = Instant.now();
@@ -86,6 +118,12 @@ public class Project {
     private static void validateTitle(String title) {
         if (title == null || title.trim().isEmpty()) {
             throw new InvalidProjectTitleException();
+        }
+    }
+
+    private static void validateTargetWordCount(int targetWordCount) {
+        if (targetWordCount < 0) {
+            throw new InvalidTargetWordCountException();
         }
     }
 
@@ -103,6 +141,18 @@ public class Project {
 
     public String getSynopsis() {
         return synopsis;
+    }
+
+    public String getGenre() {
+        return genre;
+    }
+
+    public int getCurrentWordCount() {
+        return currentWordCount;
+    }
+
+    public int getTargetWordCount() {
+        return targetWordCount;
     }
 
     public String getCoverUrl() {

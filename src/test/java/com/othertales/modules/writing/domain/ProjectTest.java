@@ -11,20 +11,24 @@ import static org.junit.jupiter.api.Assertions.*;
 class ProjectTest {
 
     private static final UUID USER_ID = UUID.randomUUID();
+    private static final int DEFAULT_TARGET = 50000;
 
     @Nested
     @DisplayName("create()")
     class CreateTests {
 
         @Test
-        @DisplayName("should create project with valid title")
-        void shouldCreateProjectWithValidTitle() {
-            var project = Project.create(USER_ID, "My Novel", "A great story");
+        @DisplayName("should create project with all fields")
+        void shouldCreateProjectWithAllFields() {
+            var project = Project.create(USER_ID, "My Novel", "A great story", "Fantasy", 80000);
 
             assertNotNull(project.getId());
             assertEquals(USER_ID, project.getUserId());
             assertEquals("My Novel", project.getTitle());
             assertEquals("A great story", project.getSynopsis());
+            assertEquals("Fantasy", project.getGenre());
+            assertEquals(0, project.getCurrentWordCount());
+            assertEquals(80000, project.getTargetWordCount());
             assertEquals(ProjectStatus.DRAFT, project.getStatus());
             assertFalse(project.isDeleted());
             assertNotNull(project.getCreatedAt());
@@ -33,9 +37,18 @@ class ProjectTest {
         }
 
         @Test
+        @DisplayName("should create project with null genre")
+        void shouldCreateProjectWithNullGenre() {
+            var project = Project.create(USER_ID, "My Novel", null, null, DEFAULT_TARGET);
+
+            assertNull(project.getGenre());
+            assertNull(project.getSynopsis());
+        }
+
+        @Test
         @DisplayName("should trim whitespace from title")
         void shouldTrimWhitespaceFromTitle() {
-            var project = Project.create(USER_ID, "  My Novel  ", null);
+            var project = Project.create(USER_ID, "  My Novel  ", null, null, DEFAULT_TARGET);
 
             assertEquals("My Novel", project.getTitle());
         }
@@ -44,7 +57,7 @@ class ProjectTest {
         @DisplayName("should throw exception when title is null")
         void shouldThrowExceptionWhenTitleIsNull() {
             assertThrows(InvalidProjectTitleException.class, () ->
-                    Project.create(USER_ID, null, null)
+                    Project.create(USER_ID, null, null, null, DEFAULT_TARGET)
             );
         }
 
@@ -52,7 +65,7 @@ class ProjectTest {
         @DisplayName("should throw exception when title is empty")
         void shouldThrowExceptionWhenTitleIsEmpty() {
             assertThrows(InvalidProjectTitleException.class, () ->
-                    Project.create(USER_ID, "", null)
+                    Project.create(USER_ID, "", null, null, DEFAULT_TARGET)
             );
         }
 
@@ -60,7 +73,7 @@ class ProjectTest {
         @DisplayName("should throw exception when title is only whitespace")
         void shouldThrowExceptionWhenTitleIsOnlyWhitespace() {
             assertThrows(InvalidProjectTitleException.class, () ->
-                    Project.create(USER_ID, "   ", null)
+                    Project.create(USER_ID, "   ", null, null, DEFAULT_TARGET)
             );
         }
 
@@ -68,8 +81,24 @@ class ProjectTest {
         @DisplayName("should throw exception when userId is null")
         void shouldThrowExceptionWhenUserIdIsNull() {
             assertThrows(NullPointerException.class, () ->
-                    Project.create(null, "Title", null)
+                    Project.create(null, "Title", null, null, DEFAULT_TARGET)
             );
+        }
+
+        @Test
+        @DisplayName("should throw exception when targetWordCount is negative")
+        void shouldThrowExceptionWhenTargetWordCountIsNegative() {
+            assertThrows(InvalidTargetWordCountException.class, () ->
+                    Project.create(USER_ID, "Title", null, null, -1)
+            );
+        }
+
+        @Test
+        @DisplayName("should allow zero targetWordCount")
+        void shouldAllowZeroTargetWordCount() {
+            var project = Project.create(USER_ID, "Title", null, null, 0);
+
+            assertEquals(0, project.getTargetWordCount());
         }
     }
 
@@ -80,7 +109,7 @@ class ProjectTest {
         @Test
         @DisplayName("should update title with valid value")
         void shouldUpdateTitleWithValidValue() {
-            var project = Project.create(USER_ID, "Old Title", null);
+            var project = Project.create(USER_ID, "Old Title", null, null, DEFAULT_TARGET);
             var originalUpdatedAt = project.getUpdatedAt();
 
             project.updateTitle("New Title");
@@ -93,11 +122,61 @@ class ProjectTest {
         @Test
         @DisplayName("should throw exception when updating with empty title")
         void shouldThrowExceptionWhenUpdatingWithEmptyTitle() {
-            var project = Project.create(USER_ID, "Title", null);
+            var project = Project.create(USER_ID, "Title", null, null, DEFAULT_TARGET);
 
             assertThrows(InvalidProjectTitleException.class, () ->
                     project.updateTitle("")
             );
+        }
+    }
+
+    @Nested
+    @DisplayName("updateTargetWordCount()")
+    class UpdateTargetWordCountTests {
+
+        @Test
+        @DisplayName("should update target word count")
+        void shouldUpdateTargetWordCount() {
+            var project = Project.create(USER_ID, "Title", null, null, DEFAULT_TARGET);
+
+            project.updateTargetWordCount(100000);
+
+            assertEquals(100000, project.getTargetWordCount());
+        }
+
+        @Test
+        @DisplayName("should throw exception when updating with negative value")
+        void shouldThrowExceptionWhenUpdatingWithNegativeValue() {
+            var project = Project.create(USER_ID, "Title", null, null, DEFAULT_TARGET);
+
+            assertThrows(InvalidTargetWordCountException.class, () ->
+                    project.updateTargetWordCount(-1)
+            );
+        }
+    }
+
+    @Nested
+    @DisplayName("updateCurrentWordCount()")
+    class UpdateCurrentWordCountTests {
+
+        @Test
+        @DisplayName("should update current word count")
+        void shouldUpdateCurrentWordCount() {
+            var project = Project.create(USER_ID, "Title", null, null, DEFAULT_TARGET);
+
+            project.updateCurrentWordCount(5000);
+
+            assertEquals(5000, project.getCurrentWordCount());
+        }
+
+        @Test
+        @DisplayName("should set to zero when negative value provided")
+        void shouldSetToZeroWhenNegativeValueProvided() {
+            var project = Project.create(USER_ID, "Title", null, null, DEFAULT_TARGET);
+
+            project.updateCurrentWordCount(-100);
+
+            assertEquals(0, project.getCurrentWordCount());
         }
     }
 
@@ -108,7 +187,7 @@ class ProjectTest {
         @Test
         @DisplayName("should change status to PUBLISHED")
         void shouldChangeStatusToPublished() {
-            var project = Project.create(USER_ID, "Title", null);
+            var project = Project.create(USER_ID, "Title", null, null, DEFAULT_TARGET);
 
             project.publish();
 
@@ -123,7 +202,7 @@ class ProjectTest {
         @Test
         @DisplayName("should mark project as deleted (soft delete)")
         void shouldMarkProjectAsDeleted() {
-            var project = Project.create(USER_ID, "Title", null);
+            var project = Project.create(USER_ID, "Title", null, null, DEFAULT_TARGET);
 
             project.markAsDeleted();
 
