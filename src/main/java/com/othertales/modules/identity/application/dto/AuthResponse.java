@@ -1,0 +1,11 @@
+package com.othertales.modules.identity.application.dto;
+
+public record AuthResponse(
+        String accessToken,
+        String tokenType,
+        Long expiresIn
+) {
+    public AuthResponse(String accessToken, Long expiresIn) {
+        this(accessToken, "Bearer", expiresIn);
+    }
+}
