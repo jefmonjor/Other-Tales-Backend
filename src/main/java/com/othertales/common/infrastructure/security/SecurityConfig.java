@@ -38,11 +38,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         var configuration = new CorsConfiguration();
 
-        // Development: Allow all localhost ports and any origin
+        // Development: Allow localhost origins only
+        // SECURITY: Never use "*" wildcard with allowCredentials(true)
+        // Add production domains here before deployment (e.g., "https://othertales.com")
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                "http://127.0.0.1:*",
-                "*"
+                "http://127.0.0.1:*"
         ));
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
