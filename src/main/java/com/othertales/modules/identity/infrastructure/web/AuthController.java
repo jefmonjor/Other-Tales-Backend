@@ -1,10 +1,15 @@
 package com.othertales.modules.identity.infrastructure.web;
 
 import com.othertales.modules.identity.application.dto.AuthResponse;
+import com.othertales.modules.identity.application.dto.ForgotPasswordRequest;
 import com.othertales.modules.identity.application.dto.LoginRequest;
+import com.othertales.modules.identity.application.dto.MessageResponse;
 import com.othertales.modules.identity.application.dto.RegisterRequest;
+import com.othertales.modules.identity.application.dto.ResetPasswordRequest;
+import com.othertales.modules.identity.application.usecase.ForgotPasswordUseCase;
 import com.othertales.modules.identity.application.usecase.LoginUserUseCase;
 import com.othertales.modules.identity.application.usecase.RegisterUserUseCase;
+import com.othertales.modules.identity.application.usecase.ResetPasswordUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -23,13 +28,19 @@ public class AuthController {
 
     private final RegisterUserUseCase registerUserUseCase;
     private final LoginUserUseCase loginUserUseCase;
+    private final ForgotPasswordUseCase forgotPasswordUseCase;
+    private final ResetPasswordUseCase resetPasswordUseCase;
 
     public AuthController(
             RegisterUserUseCase registerUserUseCase,
-            LoginUserUseCase loginUserUseCase
+            LoginUserUseCase loginUserUseCase,
+            ForgotPasswordUseCase forgotPasswordUseCase,
+            ResetPasswordUseCase resetPasswordUseCase
     ) {
         this.registerUserUseCase = registerUserUseCase;
         this.loginUserUseCase = loginUserUseCase;
+        this.forgotPasswordUseCase = forgotPasswordUseCase;
+        this.resetPasswordUseCase = resetPasswordUseCase;
     }
 
     @PostMapping("/register")
@@ -71,6 +82,26 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        var command = new ForgotPasswordUseCase.Command(request.email());
+        forgotPasswordUseCase.execute(command);
+
+        return ResponseEntity.ok(new MessageResponse(
+                "If the email exists, a password reset link has been sent"
+        ));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        var command = new ResetPasswordUseCase.Command(request.token(), request.newPassword());
+        resetPasswordUseCase.execute(command);
+
+        return ResponseEntity.ok(new MessageResponse(
+                "Password has been reset successfully"
+        ));
     }
 
     @PostMapping("/social/{provider}")
