@@ -6,6 +6,7 @@ import com.othertales.modules.writing.domain.InvalidProjectTitleException;
 import com.othertales.modules.writing.domain.ProjectNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -78,6 +79,24 @@ public class GlobalExceptionHandler {
                 .toList();
 
         problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation: {}", ex.getMessage());
+
+        var message = "A data constraint was violated";
+        if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("email")) {
+            message = "Email already exists";
+        }
+
+        var problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                message
+        );
+        problem.setType(URI.create("https://api.othertales.com/problems/data-conflict"));
+        problem.setTitle("Data Conflict");
         return problem;
     }
 
