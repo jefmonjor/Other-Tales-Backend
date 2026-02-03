@@ -8,5 +8,8 @@
 ## Decisiones Clave (ADR)
 - **API First:** Definimos el contrato OpenAPI antes de escribir el Controller.
 - **DB Schema:** Flyway es la única fuente de verdad para la estructura de la BD.
-- **Docker:** PostgreSQL 18 containerizado para dev y test.
-- **Auth:** JWT asimétrico (o simétrico simple para MVP) con Spring Security.
+- **Database:** PostgreSQL hosted on Supabase.
+- **Auth:** OAuth2 Resource Server - JWT validation against Supabase Auth.
+  - Authentication is handled entirely by Supabase (auth.users).
+  - Backend validates JWTs using Supabase's JWKS endpoint.
+  - User profiles stored in `public.profiles` table.

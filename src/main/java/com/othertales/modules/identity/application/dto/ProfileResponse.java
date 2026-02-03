@@ -3,7 +3,7 @@ package com.othertales.modules.identity.application.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-public record UserResponse(
+public record ProfileResponse(
         UUID id,
         String email,
         String fullName,

@@ -4,52 +4,48 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
-public class User {
+public class Profile {
 
     private UUID id;
     private String email;
-    private String passwordHash;
     private String fullName;
     private PlanType planType;
     private Instant createdAt;
     private Instant updatedAt;
     private Long version;
 
-    private User() {}
+    private Profile() {}
 
-    public static User create(String email, String passwordHash, String fullName) {
-        var user = new User();
-        user.id = UUID.randomUUID();
-        user.email = Objects.requireNonNull(email, "Email is required");
-        user.passwordHash = Objects.requireNonNull(passwordHash, "Password hash is required");
-        user.fullName = fullName;
-        user.planType = PlanType.FREE;
-        user.createdAt = Instant.now();
-        user.updatedAt = user.createdAt;
-        user.version = 0L;
-        return user;
+    public static Profile create(UUID id, String email, String fullName) {
+        var profile = new Profile();
+        profile.id = Objects.requireNonNull(id, "ID is required (from Supabase auth)");
+        profile.email = Objects.requireNonNull(email, "Email is required");
+        profile.fullName = fullName;
+        profile.planType = PlanType.FREE;
+        profile.createdAt = Instant.now();
+        profile.updatedAt = profile.createdAt;
+        profile.version = 0L;
+        return profile;
     }
 
-    public static User reconstitute(
+    public static Profile reconstitute(
             UUID id,
             String email,
-            String passwordHash,
             String fullName,
             PlanType planType,
             Instant createdAt,
             Instant updatedAt,
             Long version
     ) {
-        var user = new User();
-        user.id = id;
-        user.email = email;
-        user.passwordHash = passwordHash;
-        user.fullName = fullName;
-        user.planType = planType;
-        user.createdAt = createdAt;
-        user.updatedAt = updatedAt;
-        user.version = version;
-        return user;
+        var profile = new Profile();
+        profile.id = id;
+        profile.email = email;
+        profile.fullName = fullName;
+        profile.planType = planType;
+        profile.createdAt = createdAt;
+        profile.updatedAt = updatedAt;
+        profile.version = version;
+        return profile;
     }
 
     public UUID getId() {
@@ -58,10 +54,6 @@ public class User {
 
     public String getEmail() {
         return email;
-    }
-
-    public String getPasswordHash() {
-        return passwordHash;
     }
 
     public String getFullName() {
@@ -84,12 +76,17 @@ public class User {
         return version;
     }
 
+    public void upgradeToPro() {
+        this.planType = PlanType.PRO;
+        this.updatedAt = Instant.now();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        User user = (User) o;
-        return Objects.equals(id, user.id);
+        Profile profile = (Profile) o;
+        return Objects.equals(id, profile.id);
     }
 
     @Override

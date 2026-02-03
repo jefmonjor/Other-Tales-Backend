@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "projects")
+@Table(name = "projects", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor
