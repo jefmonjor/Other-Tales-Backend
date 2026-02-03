@@ -1,29 +1,29 @@
 # =============================================================================
 # Other Tales Backend - Optimized Dockerfile for Google Cloud Run
+# Strategy: Containerized Build (No Maven Wrapper required)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Build
+# Stage 1: Build (Maven official image)
 # -----------------------------------------------------------------------------
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9.9-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml first (layer caching)
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
+# 1. Copy pom.xml first (layer caching for dependencies)
+COPY pom.xml .
 
-# Download dependencies (cached unless pom.xml changes)
-RUN ./mvnw dependency:go-offline -B
+# 2. Download dependencies (cached unless pom.xml changes)
+RUN mvn dependency:go-offline -B
 
-# Copy source code
+# 3. Copy source code
 COPY src/ src/
 
-# Build the application (skip tests for faster builds)
-RUN ./mvnw clean package -DskipTests -B
+# 4. Build the application (skip tests - validated in CI)
+RUN mvn clean package -DskipTests -B
 
 # -----------------------------------------------------------------------------
-# Stage 2: Runtime
+# Stage 2: Runtime (Lightweight JRE image)
 # -----------------------------------------------------------------------------
 FROM eclipse-temurin:21-jre-alpine
 
