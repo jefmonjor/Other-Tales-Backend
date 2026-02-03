@@ -22,6 +22,8 @@ public final class ErrorCodes {
     // Project errors
     public static final String PROJECT_NOT_FOUND = "PROJECT_NOT_FOUND";
     public static final String PROJECT_INVALID_TITLE = "PROJECT_INVALID_TITLE";
+    public static final String PROJECT_INVALID_GENRE = "PROJECT_INVALID_GENRE";
+    public static final String PROJECT_INVALID_WORD_COUNT = "PROJECT_INVALID_WORD_COUNT";
     public static final String PROJECT_ACCESS_DENIED = "PROJECT_ACCESS_DENIED";
 
     // Validation errors
