@@ -19,20 +19,17 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "profiles", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor
-public class UserEntity implements Persistable<UUID> {
+public class ProfileEntity implements Persistable<UUID> {
 
     @Id
     private UUID id;
 
     @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
 
     @Column(name = "full_name")
     private String fullName;

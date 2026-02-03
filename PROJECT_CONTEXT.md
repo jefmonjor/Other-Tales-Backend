@@ -6,9 +6,9 @@ Plataforma "All-in-one" para escritores. Gestión de proyectos, escritura offlin
 ## Fases de Implementación (Backend Scope)
 
 ### Fase 1: Identity & Foundation
-- Registro/Login con Email/Password (JWT Stateless).
-- Login Social: **MOCK** (Endpoint devuelve 501 Not Implemented).
-- Perfiles de usuario (Plan `FREE` / `PRO`).
+- **Authentication delegated to Supabase Auth** (OAuth2 Resource Server pattern).
+- Perfiles de usuario (Plan `FREE` / `PRO`) stored in `public.profiles`.
+- Backend validates JWTs issued by Supabase.
 
 ### Fase 2: Writing Core (Projects)
 - Gestión de Proyectos (Novelas).

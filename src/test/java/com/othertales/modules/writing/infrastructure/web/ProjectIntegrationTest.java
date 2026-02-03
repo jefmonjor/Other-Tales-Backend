@@ -33,14 +33,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Testcontainers
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@Sql(scripts = "/sql/test-users.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
+@Sql(scripts = "/sql/test-profiles.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_CLASS)
 @DisplayName("Project API Integration Tests")
 class ProjectIntegrationTest {
 
     private static final String API_PROJECTS = "/api/v1/projects";
     private static final String X_USER_ID_HEADER = "X-User-Id";
 
-    // Predefined test user IDs (must match test-users.sql)
+    // Predefined test profile IDs (must match test-profiles.sql)
     private static final UUID TEST_USER_1 = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID TEST_USER_2 = UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID OWNER_USER = UUID.fromString("33333333-3333-3333-3333-333333333333");
