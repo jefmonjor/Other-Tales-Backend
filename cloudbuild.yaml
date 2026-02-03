@@ -1,13 +1,13 @@
 steps:
-  # 1. Construir imagen (Maven + Java)
+  # 1. Construir la imagen con Maven y Java (Multistage)
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/other-tales-backend', '.']
 
-  # 2. Subir imagen al registro
+  # 2. Subir la imagen al registro de Google
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/other-tales-backend']
 
-  # 3. Desplegar en Cloud Run con las VARIABLES INYECTADAS
+  # 3. Desplegar en Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -27,7 +27,7 @@ steps:
       - '300s'
       - '--memory'
       - '1Gi'
-      # AQUÍ ESTÁ LA MAGIA: Pasamos las variables explícitamente
+      # AQUÍ ESTÁ LA INYECCIÓN DE VARIABLES
       - '--set-env-vars'
       - >-
         SERVER_PORT=8080,
@@ -38,3 +38,7 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/other-tales-backend'
+
+# --- ESTO ES LO NUEVO PARA CORREGIR EL ERROR ---
+options:
+  logging: CLOUD_LOGGING_ONLY
