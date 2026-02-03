@@ -40,8 +40,14 @@ spring:
         jwt:
           jwk-set-uri: ${SUPABASE_JWKS_URI:https://gsslwdruiqtlztupekcd.supabase.co/auth/v1/.well-known/jwks.json}
 
+# =============================================================================
+# SERVER CONFIGURATION - CRITICAL FOR CLOUD RUN
+# =============================================================================
 server:
   port: ${PORT:8080}
+  # CRITICAL: Bind to 0.0.0.0 so Cloud Run load balancer can reach the container
+  # Default localhost (127.0.0.1) is invisible from outside the container
+  address: 0.0.0.0
   error:
     include-message: always
     include-binding-errors: always
@@ -52,7 +58,16 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
 logging:
   level:
     com.othertales: DEBUG
     org.springframework.security: DEBUG
+    # Debug logs for Cloud Run startup troubleshooting
+    org.springframework.web: DEBUG
+    org.springframework.boot.web.embedded: INFO
+    # Reduce Hibernate noise
+    org.hibernate: ERROR
+    org.hibernate.SQL: WARN
