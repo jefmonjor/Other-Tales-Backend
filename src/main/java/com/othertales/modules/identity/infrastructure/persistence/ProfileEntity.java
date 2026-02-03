@@ -10,6 +10,10 @@ import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,9 +32,14 @@ public class ProfileEntity implements Persistable<UUID> {
     @Id
     private UUID id;
 
+    @NotBlank
+    @Email
+    @Size(max = 255)
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Size(min = 2, max = 100)
+    @Pattern(regexp = "^[\\p{L}\\s'-]+$", message = "PROFILE_INVALID_NAME")
     @Column(name = "full_name")
     private String fullName;
 

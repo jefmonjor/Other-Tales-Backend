@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+*.iml
+.vscode
+
+# Build artifacts
+target/
+*.jar
+!.mvn/wrapper/*.jar
+
+# Logs
+*.log
+logs/
+
+# Documentation
+*.md
+docs/
+prompts/
+
+# Local config
+*.local
+.env
+.env.*
+
+# Test files
+src/test/
