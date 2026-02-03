@@ -1,0 +1,387 @@
+openapi: 3.1.0
+info:
+  title: Other Tales - Chapters API
+  description: Chapter management endpoints for the Editor module
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+paths:
+  /projects/{projectId}/chapters:
+    post:
+      tags:
+        - Chapters
+      summary: Create a new chapter
+      description: Creates a new chapter in the specified project
+      operationId: createChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: The project UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChapterRequest'
+      responses:
+        '201':
+          description: Chapter created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Project not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    get:
+      tags:
+        - Chapters
+      summary: List chapters (Book Index)
+      description: Returns the list of chapters for a project, ordered by sortOrder
+      operationId: listChapters
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: The project UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of chapters (index)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterIndexResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Project not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /chapters/{chapterId}:
+    get:
+      tags:
+        - Chapters
+      summary: Get chapter content
+      description: Returns the full chapter including content for editing
+      operationId: getChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          description: The chapter UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chapter with content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Chapter not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    put:
+      tags:
+        - Chapters
+      summary: Update chapter (Auto-save)
+      description: Updates chapter title and/or content. Designed for auto-save functionality.
+      operationId: updateChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          description: The chapter UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChapterRequest'
+      responses:
+        '200':
+          description: Chapter updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Chapter not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+    delete:
+      tags:
+        - Chapters
+      summary: Delete chapter
+      description: Soft-deletes a chapter from the project
+      operationId: deleteChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          description: The chapter UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Chapter deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Chapter not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /chapters/{chapterId}/reorder:
+    patch:
+      tags:
+        - Chapters
+      summary: Reorder chapter
+      description: Changes the position of a chapter in the book index
+      operationId: reorderChapter
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: chapterId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderChapterRequest'
+      responses:
+        '200':
+          description: Chapter reordered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChapterSummaryResponse'
+        '400':
+          description: Invalid sort order
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Chapter not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateChapterRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Chapter title
+          example: Chapter 1 - The Beginning
+        content:
+          type: string
+          description: Initial chapter content (optional)
+          example: ""
+        sortOrder:
+          type: integer
+          minimum: 0
+          description: Position in the book index (auto-assigned if not provided)
+          example: 1
+
+    UpdateChapterRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Updated chapter title
+          example: Chapter 1 - A New Beginning
+        content:
+          type: string
+          description: Updated chapter content
+          example: "It was a dark and stormy night..."
+
+    ReorderChapterRequest:
+      type: object
+      required:
+        - newSortOrder
+      properties:
+        newSortOrder:
+          type: integer
+          minimum: 0
+          description: New position in the book index
+          example: 3
+
+    ChapterResponse:
+      type: object
+      description: Full chapter data including content
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+          description: The chapter's text content
+        sortOrder:
+          type: integer
+          description: Position in the book index (1-based)
+        wordCount:
+          type: integer
+          description: Word count of the chapter content
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ChapterSummaryResponse:
+      type: object
+      description: Chapter metadata for index listing (no content)
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        sortOrder:
+          type: integer
+        wordCount:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+
+    ChapterIndexResponse:
+      type: object
+      description: Book index with all chapters
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChapterSummaryResponse'
+        totalChapters:
+          type: integer
+        totalWordCount:
+          type: integer
+          description: Sum of all chapters' word counts
+
+    ProblemDetail:
+      type: object
+      description: RFC 7807 Problem Details
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri

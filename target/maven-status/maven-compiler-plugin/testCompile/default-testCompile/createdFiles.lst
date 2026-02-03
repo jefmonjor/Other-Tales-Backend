@@ -1,0 +1,11 @@
+com/othertales/modules/writing/domain/ProjectTest$UpdateCurrentWordCountTests.class
+com/othertales/modules/writing/infrastructure/web/ProjectIntegrationTest$GetProjectByIdTests.class
+com/othertales/modules/writing/domain/ProjectTest.class
+com/othertales/modules/writing/domain/ProjectTest$DeleteTests.class
+com/othertales/modules/writing/domain/ProjectTest$PublishTests.class
+com/othertales/modules/writing/domain/ProjectTest$UpdateTargetWordCountTests.class
+com/othertales/modules/writing/infrastructure/web/ProjectIntegrationTest$ListProjectsTests.class
+com/othertales/modules/writing/infrastructure/web/ProjectIntegrationTest$CreateProjectTests.class
+com/othertales/modules/writing/domain/ProjectTest$UpdateTitleTests.class
+com/othertales/modules/writing/domain/ProjectTest$CreateTests.class
+com/othertales/modules/writing/infrastructure/web/ProjectIntegrationTest.class
