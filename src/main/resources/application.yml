@@ -3,15 +3,20 @@ spring:
     name: other-tales-api
 
   # --- DATABASE CONFIG (Supabase PostgreSQL) ---
+  # Values come from environment variables in Cloud Run
   datasource:
-    url: jdbc:postgresql://db.gsslwdruiqtlztupekcd.supabase.co:5432/postgres?sslmode=require
-    username: postgres
-    password: sewweG-jeqwub-9bywny
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.gsslwdruiqtlztupekcd.supabase.co:5432/postgres?sslmode=require}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:sewweG-jeqwub-9bywny}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 20000
+      maximum-pool-size: 5
+      minimum-idle: 2
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
     show-sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
@@ -19,22 +24,24 @@ spring:
       hibernate:
         default_schema: public
         format_sql: true
+    defer-datasource-initialization: false
 
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
     default-schema: public
+    connect-retries: 3
 
   # --- SECURITY (OAuth2 Resource Server) ---
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: https://gsslwdruiqtlztupekcd.supabase.co/auth/v1/.well-known/jwks.json
+          jwk-set-uri: ${SUPABASE_JWKS_URI:https://gsslwdruiqtlztupekcd.supabase.co/auth/v1/.well-known/jwks.json}
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   error:
     include-message: always
     include-binding-errors: always
