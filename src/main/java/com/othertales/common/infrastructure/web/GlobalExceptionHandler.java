@@ -129,6 +129,9 @@ public class GlobalExceptionHandler {
         return switch (validationCode) {
             case "NotNull", "NotBlank", "NotEmpty" -> ErrorCodes.VALIDATION_FIELD_REQUIRED;
             case "Email" -> ErrorCodes.PROFILE_INVALID_EMAIL;
+            case "PROJECT_INVALID_TITLE" -> ErrorCodes.PROJECT_INVALID_TITLE;
+            case "PROJECT_INVALID_GENRE" -> ErrorCodes.PROJECT_INVALID_GENRE;
+            case "PROFILE_INVALID_NAME" -> ErrorCodes.PROFILE_INVALID_NAME;
             case "Pattern", "Size", "Min", "Max" -> ErrorCodes.VALIDATION_FIELD_INVALID;
             default -> ErrorCodes.VALIDATION_FIELD_INVALID;
         };
