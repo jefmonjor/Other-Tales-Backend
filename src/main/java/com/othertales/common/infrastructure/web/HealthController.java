@@ -2,17 +2,27 @@ package com.othertales.common.infrastructure.web;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
 public class HealthController {
 
-    @GetMapping("/health")
+    /**
+     * Root health check endpoint for Cloud Run.
+     * Returns simple "OK" for fast health check responses.
+     */
+    @GetMapping("/")
+    public ResponseEntity<String> root() {
+        return ResponseEntity.ok("OK");
+    }
+
+    /**
+     * Detailed health check endpoint.
+     */
+    @GetMapping("/api/health")
     public ResponseEntity<Map<String, Object>> health() {
         return ResponseEntity.ok(Map.of(
                 "status", "UP",

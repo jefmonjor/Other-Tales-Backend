@@ -3,7 +3,6 @@ spring:
     name: other-tales-api
 
   # --- DATABASE CONFIG (Supabase PostgreSQL) ---
-  # Values come from environment variables in Cloud Run
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.gsslwdruiqtlztupekcd.supabase.co:5432/postgres?sslmode=require}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
@@ -13,6 +12,7 @@ spring:
       connection-timeout: 20000
       maximum-pool-size: 5
       minimum-idle: 2
+      pool-name: OtherTales-HikariCP
 
   jpa:
     hibernate:
@@ -23,7 +23,9 @@ spring:
     properties:
       hibernate:
         default_schema: public
-        format_sql: true
+        format_sql: false
+        jdbc:
+          time_zone: UTC
     defer-datasource-initialization: false
 
   flyway:
@@ -33,7 +35,7 @@ spring:
     default-schema: public
     connect-retries: 3
 
-  # --- SECURITY (OAuth2 Resource Server) ---
+  # --- SECURITY (OAuth2 Resource Server with Supabase) ---
   security:
     oauth2:
       resourceserver:
@@ -41,33 +43,67 @@ spring:
           jwk-set-uri: ${SUPABASE_JWKS_URI:https://gsslwdruiqtlztupekcd.supabase.co/auth/v1/.well-known/jwks.json}
 
 # =============================================================================
+# APP SECURITY CONFIGURATION
+# =============================================================================
+app:
+  security:
+    jwt:
+      issuer: ${JWT_ISSUER:https://gsslwdruiqtlztupekcd.supabase.co/auth/v1}
+      clock-skew-seconds: 60
+
+# =============================================================================
 # SERVER CONFIGURATION - CRITICAL FOR CLOUD RUN
 # =============================================================================
 server:
   port: ${PORT:8080}
-  # CRITICAL: Bind to 0.0.0.0 so Cloud Run load balancer can reach the container
-  # Default localhost (127.0.0.1) is invisible from outside the container
   address: 0.0.0.0
   error:
     include-message: always
     include-binding-errors: always
+  shutdown: graceful
 
+# =============================================================================
+# ACTUATOR CONFIGURATION (Health Checks for Cloud Run)
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+# =============================================================================
+# OPENAPI / SWAGGER DOCUMENTATION
+# =============================================================================
 springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+    enabled: true
 
 # =============================================================================
-# LOGGING CONFIGURATION
+# LOGGING CONFIGURATION (JSON for Cloud Logging)
 # =============================================================================
 logging:
+  pattern:
+    console: '{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%level","logger":"%logger{36}","message":"%msg","thread":"%thread"}%n'
   level:
-    com.othertales: DEBUG
-    org.springframework.security: DEBUG
-    # Debug logs for Cloud Run startup troubleshooting
-    org.springframework.web: DEBUG
+    root: INFO
+    com.othertales: INFO
+    org.springframework.security: WARN
+    org.springframework.web: INFO
     org.springframework.boot.web.embedded: INFO
-    # Reduce Hibernate noise
-    org.hibernate: ERROR
+    org.hibernate: WARN
     org.hibernate.SQL: WARN
+    com.zaxxer.hikari: INFO

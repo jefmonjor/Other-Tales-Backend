@@ -1,13 +1,13 @@
 steps:
-  # 1. Construir la imagen con Maven y Java (Multistage)
+  # 1. Build Docker image with Maven and Java (Multistage)
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/other-tales-backend', '.']
 
-  # 2. Subir la imagen al registro de Google
+  # 2. Push image to Google Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/other-tales-backend']
 
-  # 3. Desplegar en Cloud Run
+  # 3. Deploy to Cloud Run with robust argument formatting
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -27,18 +27,19 @@ steps:
       - '300s'
       - '--memory'
       - '1Gi'
-      # AQUÍ ESTÁ LA INYECCIÓN DE VARIABLES
       - '--set-env-vars'
-      - >-
-        SERVER_PORT=8080,
-        SPRING_DATASOURCE_URL=jdbc:postgresql://db.gsslwdruiqtlztupekcd.supabase.co:5432/postgres?sslmode=require,
-        SPRING_DATASOURCE_USERNAME=postgres,
-        SPRING_DATASOURCE_PASSWORD=sewweG-jeqwub-9bywny,
-        SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=https://gsslwdruiqtlztupekcd.supabase.co/auth/v1/.well-known/jwks.json
+      - 'SERVER_PORT=8080'
+      - '--set-env-vars'
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://db.gsslwdruiqtlztupekcd.supabase.co:5432/postgres?sslmode=require'
+      - '--set-env-vars'
+      - 'SPRING_DATASOURCE_USERNAME=postgres'
+      - '--set-env-vars'
+      - 'SPRING_DATASOURCE_PASSWORD=sewweG-jeqwub-9bywny'
+      - '--set-env-vars'
+      - 'SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=https://gsslwdruiqtlztupekcd.supabase.co/auth/v1/.well-known/jwks.json'
 
 images:
   - 'gcr.io/$PROJECT_ID/other-tales-backend'
 
-# --- ESTO ES LO NUEVO PARA CORREGIR EL ERROR ---
 options:
   logging: CLOUD_LOGGING_ONLY
