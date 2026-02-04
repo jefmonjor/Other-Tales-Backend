@@ -6,13 +6,22 @@
 -- Step 1: Drop the foreign key constraint on projects (if exists)
 ALTER TABLE projects DROP CONSTRAINT IF EXISTS fk_projects_user;
 
--- Step 2: Rename users table to profiles (only if users exists and profiles doesn't)
+-- Step 2: Handle users → profiles migration (idempotent, handles all cases)
 DO $$
 BEGIN
-    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users' AND table_schema = 'public')
-       AND NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles' AND table_schema = 'public')
+    -- Case A: 'users' exists AND 'profiles' does NOT exist → RENAME
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users')
+       AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles')
     THEN
         ALTER TABLE users RENAME TO profiles;
+
+    -- Case B: BOTH 'users' AND 'profiles' exist → DROP old 'users' to clean up
+    ELSIF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users')
+          AND EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles')
+    THEN
+        DROP TABLE users CASCADE;
+
+    -- Case C: Only 'profiles' exists → Nothing to do (already migrated)
     END IF;
 END $$;
 
