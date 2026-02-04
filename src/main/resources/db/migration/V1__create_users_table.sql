@@ -1,7 +1,8 @@
 -- V1__create_users_table.sql
 -- Identity Module: Users table
+-- IF NOT EXISTS: Prevents crash if table already exists in production
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
@@ -14,4 +15,4 @@ CREATE TABLE users (
     CONSTRAINT chk_plan_type CHECK (plan_type IN ('FREE', 'PRO'))
 );
 
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
