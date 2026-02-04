@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 
 -- Add foreign key only if it doesn't exist (idempotent)
+-- IMPORTANT: References profiles(id), NOT users(id) - Supabase schema
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -31,7 +32,7 @@ BEGIN
         AND table_name = 'projects'
     ) THEN
         ALTER TABLE projects ADD CONSTRAINT fk_projects_user
-            FOREIGN KEY (user_id) REFERENCES users(id);
+            FOREIGN KEY (user_id) REFERENCES profiles(id);
     END IF;
 END $$;
 
