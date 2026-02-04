@@ -22,7 +22,11 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/health", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Public endpoints for Cloud Run health checks (CRITICAL: 401 = container killed)
+                .requestMatchers("/", "/api/health", "/actuator/health").permitAll()
+                // OpenAPI documentation
+                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**").permitAll()
+                // All API endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().denyAll()
             )

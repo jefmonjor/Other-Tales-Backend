@@ -63,11 +63,11 @@ springdoc:
 # =============================================================================
 logging:
   level:
-    com.othertales: DEBUG
-    org.springframework.security: DEBUG
-    # Debug logs for Cloud Run startup troubleshooting
-    org.springframework.web: DEBUG
+    root: INFO
+    com.othertales: INFO
+    org.springframework.security: WARN
+    org.springframework.web: INFO
     org.springframework.boot.web.embedded: INFO
-    # Reduce Hibernate noise
-    org.hibernate: ERROR
+    # Reduce Hibernate noise in production
+    org.hibernate: WARN
     org.hibernate.SQL: WARN
