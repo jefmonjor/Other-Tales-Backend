@@ -1,14 +1,14 @@
 -- V3__migrate_users_to_profiles.sql
 -- Migration to Supabase: Convert users table to profiles table
 -- Authentication is now handled by Supabase Auth (auth.users)
--- Made idempotent: safe to run multiple times
+-- BLINDADO: Idempotente y seguro para deploy limpio o re-deploy
 
--- Step 1: Drop the foreign key constraint on projects (if exists)
-ALTER TABLE projects DROP CONSTRAINT IF EXISTS fk_projects_user;
-
--- Step 2: Handle users → profiles migration (idempotent, handles all cases)
 DO $$
 BEGIN
+    -- ==========================================================================
+    -- PASO 1: Renombrado Idempotente (users → profiles)
+    -- ==========================================================================
+
     -- Case A: 'users' exists AND 'profiles' does NOT exist → RENAME
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users')
        AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles')
@@ -23,24 +23,41 @@ BEGIN
 
     -- Case C: Only 'profiles' exists → Nothing to do (already migrated)
     END IF;
+
+    -- ==========================================================================
+    -- PASO 2: Limpiar columna legacy (password_hash)
+    -- ==========================================================================
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'profiles' AND column_name = 'password_hash'
+    ) THEN
+        ALTER TABLE profiles DROP COLUMN password_hash;
+    END IF;
+
+    -- ==========================================================================
+    -- PASO 3: Crear FK de projects → profiles (AHORA que profiles existe)
+    -- ==========================================================================
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'projects') THEN
+
+        -- Eliminar FK vieja hacia 'users' si existe
+        IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_projects_user') THEN
+            ALTER TABLE projects DROP CONSTRAINT fk_projects_user;
+        END IF;
+
+        -- Crear FK correcta hacia 'profiles' si no existe
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_projects_profile') THEN
+            ALTER TABLE projects
+            ADD CONSTRAINT fk_projects_profile
+            FOREIGN KEY (user_id)
+            REFERENCES profiles(id)
+            ON DELETE CASCADE;
+        END IF;
+    END IF;
+
 END $$;
 
--- Step 3: Drop the password_hash column (authentication handled by Supabase)
-ALTER TABLE profiles DROP COLUMN IF EXISTS password_hash;
-
--- Step 4: Rename index
+-- ==========================================================================
+-- PASO 4: Índices (fuera del bloque DO para mejor manejo de errores)
+-- ==========================================================================
 DROP INDEX IF EXISTS idx_users_email;
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
-
--- Step 5: Recreate the foreign key constraint on projects referencing profiles (idempotent)
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints
-        WHERE constraint_name = 'fk_projects_profile'
-        AND table_name = 'projects'
-    ) THEN
-        ALTER TABLE projects ADD CONSTRAINT fk_projects_profile
-            FOREIGN KEY (user_id) REFERENCES profiles(id);
-    END IF;
-END $$;
