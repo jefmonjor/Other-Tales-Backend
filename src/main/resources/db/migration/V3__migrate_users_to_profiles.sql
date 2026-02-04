@@ -1,50 +1,49 @@
 -- V3__migrate_users_to_profiles.sql
 -- Migration to Supabase: Convert users table to profiles table
--- Authentication is now handled by Supabase Auth (auth.users)
--- BLINDADO: Idempotente y seguro para deploy limpio o re-deploy
+-- BLINDADO: Inyecta columnas faltantes para Trigger y índices
 
+-- 1. RENOMBRADO IDEMPOTENTE
 DO $$
 BEGIN
-    -- ==========================================================================
-    -- PASO 1: Renombrado Idempotente (users → profiles)
-    -- ==========================================================================
-
-    -- Case A: 'users' exists AND 'profiles' does NOT exist → RENAME
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users')
-       AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles')
-    THEN
+       AND NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
         ALTER TABLE users RENAME TO profiles;
-
-    -- Case B: BOTH 'users' AND 'profiles' exist → DROP old 'users' to clean up
     ELSIF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users')
-          AND EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles')
-    THEN
+       AND EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'profiles') THEN
         DROP TABLE users CASCADE;
+    END IF;
+END $$;
 
-    -- Case C: Only 'profiles' exists → Nothing to do (already migrated)
+-- 2. INYECCIÓN DE COLUMNAS FALTANTES (Para Trigger de Supabase e Índices)
+DO $$
+BEGIN
+    -- Email (Necesario para índice y Trigger)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='email') THEN
+        ALTER TABLE profiles ADD COLUMN email TEXT;
     END IF;
 
-    -- ==========================================================================
-    -- PASO 2: Limpiar columna legacy (password_hash)
-    -- ==========================================================================
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'profiles' AND column_name = 'password_hash'
-    ) THEN
-        ALTER TABLE profiles DROP COLUMN password_hash;
+    -- Full Name (Necesario para Trigger)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='full_name') THEN
+        ALTER TABLE profiles ADD COLUMN full_name TEXT;
     END IF;
 
-    -- ==========================================================================
-    -- PASO 3: Crear FK de projects → profiles (AHORA que profiles existe)
-    -- ==========================================================================
+    -- Avatar URL (Necesario para Trigger)
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='avatar_url') THEN
+        ALTER TABLE profiles ADD COLUMN avatar_url TEXT;
+    END IF;
+END $$;
+
+-- 3. GESTIÓN DE FOREIGN KEY (Projects -> Profiles)
+DO $$
+BEGIN
     IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'projects') THEN
 
-        -- Eliminar FK vieja hacia 'users' si existe
+        -- Limpiar FK vieja si existe
         IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_projects_user') THEN
             ALTER TABLE projects DROP CONSTRAINT fk_projects_user;
         END IF;
 
-        -- Crear FK correcta hacia 'profiles' si no existe
+        -- Crear FK nueva apuntando a profiles
         IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_projects_profile') THEN
             ALTER TABLE projects
             ADD CONSTRAINT fk_projects_profile
@@ -53,11 +52,7 @@ BEGIN
             ON DELETE CASCADE;
         END IF;
     END IF;
-
 END $$;
 
--- ==========================================================================
--- PASO 4: Índices (fuera del bloque DO para mejor manejo de errores)
--- ==========================================================================
-DROP INDEX IF EXISTS idx_users_email;
+-- 4. ÍNDICES (Ahora seguros porque inyectamos las columnas en el paso 2)
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
