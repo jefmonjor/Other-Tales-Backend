@@ -6,6 +6,7 @@ import com.othertales.modules.identity.domain.ProfileNotFoundException;
 import com.othertales.modules.writing.domain.ChapterAccessDeniedException;
 import com.othertales.modules.writing.domain.ChapterNotFoundException;
 import com.othertales.modules.writing.domain.InvalidProjectTitleException;
+import com.othertales.modules.writing.domain.InvalidTargetWordCountException;
 import com.othertales.modules.writing.domain.ProjectNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -73,6 +74,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidProjectTitleException.class)
     public ProblemDetail handleInvalidProjectTitle(InvalidProjectTitleException ex, HttpServletRequest request) {
         return buildProblem(HttpStatus.BAD_REQUEST, "Invalid Project Title", ErrorCodes.PROJECT_INVALID_TITLE, request);
+    }
+
+    @ExceptionHandler(InvalidTargetWordCountException.class)
+    public ProblemDetail handleInvalidTargetWordCount(InvalidTargetWordCountException ex, HttpServletRequest request) {
+        return buildProblem(HttpStatus.BAD_REQUEST, "Invalid Word Count", ErrorCodes.PROJECT_INVALID_WORD_COUNT, request);
     }
 
     @ExceptionHandler(JwtException.class)
