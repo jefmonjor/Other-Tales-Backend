@@ -26,6 +26,10 @@ public final class ErrorCodes {
     public static final String PROJECT_INVALID_WORD_COUNT = "PROJECT_INVALID_WORD_COUNT";
     public static final String PROJECT_ACCESS_DENIED = "PROJECT_ACCESS_DENIED";
 
+    // Chapter errors
+    public static final String CHAPTER_NOT_FOUND = "CHAPTER_NOT_FOUND";
+    public static final String CHAPTER_ACCESS_DENIED = "CHAPTER_ACCESS_DENIED";
+
     // Validation errors
     public static final String VALIDATION_FAILED = "VALIDATION_FAILED";
     public static final String VALIDATION_FIELD_REQUIRED = "VALIDATION_FIELD_REQUIRED";

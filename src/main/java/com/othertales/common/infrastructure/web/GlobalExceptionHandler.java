@@ -3,6 +3,8 @@ package com.othertales.common.infrastructure.web;
 import com.othertales.common.domain.BusinessException;
 import com.othertales.common.domain.ErrorCodes;
 import com.othertales.modules.identity.domain.ProfileNotFoundException;
+import com.othertales.modules.writing.domain.ChapterAccessDeniedException;
+import com.othertales.modules.writing.domain.ChapterNotFoundException;
 import com.othertales.modules.writing.domain.InvalidProjectTitleException;
 import com.othertales.modules.writing.domain.ProjectNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,18 +12,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.net.URI;
 import java.util.List;
 
 /**
- * Global exception handler that returns error CODES instead of messages.
- * Frontend is responsible for i18n translation.
+ * Global exception handler returning RFC 7807 (ProblemDetails) responses.
+ * Uses Spring Boot 3.x native ProblemDetail class.
+ *
+ * Custom properties added for Frontend i18n:
+ * - "code": Error code for translation lookup
+ * - "errors": List of field validation errors
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -29,79 +36,70 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessException(
-            BusinessException ex, HttpServletRequest request) {
+    public ProblemDetail handleBusinessException(BusinessException ex, HttpServletRequest request) {
         log.warn("Business error: {}", ex.getErrorCode());
 
-        var response = new ErrorResponse(ex.getErrorCode(), request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        return buildProblem(HttpStatus.BAD_REQUEST, "Business Rule Violation", ex.getErrorCode(), request);
     }
 
     @ExceptionHandler(ProfileNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleProfileNotFound(
-            ProfileNotFoundException ex, HttpServletRequest request) {
+    public ProblemDetail handleProfileNotFound(ProfileNotFoundException ex, HttpServletRequest request) {
         log.debug("Profile not found: {}", ex.getMessage());
 
-        var response = new ErrorResponse(ErrorCodes.PROFILE_NOT_FOUND, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        return buildProblem(HttpStatus.NOT_FOUND, "Profile Not Found", ErrorCodes.PROFILE_NOT_FOUND, request);
     }
 
     @ExceptionHandler(ProjectNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleProjectNotFound(
-            ProjectNotFoundException ex, HttpServletRequest request) {
+    public ProblemDetail handleProjectNotFound(ProjectNotFoundException ex, HttpServletRequest request) {
         log.debug("Project not found: {}", ex.getMessage());
 
-        var response = new ErrorResponse(ErrorCodes.PROJECT_NOT_FOUND, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        return buildProblem(HttpStatus.NOT_FOUND, "Project Not Found", ErrorCodes.PROJECT_NOT_FOUND, request);
+    }
+
+    @ExceptionHandler(ChapterNotFoundException.class)
+    public ProblemDetail handleChapterNotFound(ChapterNotFoundException ex, HttpServletRequest request) {
+        log.debug("Chapter not found: {}", ex.getMessage());
+
+        return buildProblem(HttpStatus.NOT_FOUND, "Chapter Not Found", ErrorCodes.CHAPTER_NOT_FOUND, request);
+    }
+
+    @ExceptionHandler(ChapterAccessDeniedException.class)
+    public ProblemDetail handleChapterAccessDenied(ChapterAccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Chapter access denied: {}", ex.getMessage());
+
+        return buildProblem(HttpStatus.FORBIDDEN, "Access Denied", ErrorCodes.CHAPTER_ACCESS_DENIED, request);
     }
 
     @ExceptionHandler(InvalidProjectTitleException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidProjectTitle(
-            InvalidProjectTitleException ex, HttpServletRequest request) {
-
-        var response = new ErrorResponse(ErrorCodes.PROJECT_INVALID_TITLE, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    public ProblemDetail handleInvalidProjectTitle(InvalidProjectTitleException ex, HttpServletRequest request) {
+        return buildProblem(HttpStatus.BAD_REQUEST, "Invalid Project Title", ErrorCodes.PROJECT_INVALID_TITLE, request);
     }
 
     @ExceptionHandler(JwtException.class)
-    public ResponseEntity<ErrorResponse> handleJwtException(
-            JwtException ex, HttpServletRequest request) {
+    public ProblemDetail handleJwtException(JwtException ex, HttpServletRequest request) {
         log.warn("JWT validation failed: {}", ex.getMessage());
 
-        var response = new ErrorResponse(ErrorCodes.AUTH_INVALID_TOKEN, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        return buildProblem(HttpStatus.UNAUTHORIZED, "Invalid Token", ErrorCodes.AUTH_INVALID_TOKEN, request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDenied(
-            AccessDeniedException ex, HttpServletRequest request) {
-
-        var response = new ErrorResponse(ErrorCodes.AUTH_UNAUTHORIZED, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        return buildProblem(HttpStatus.FORBIDDEN, "Access Denied", ErrorCodes.AUTH_UNAUTHORIZED, request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
-            MethodArgumentNotValidException ex, HttpServletRequest request) {
-
+    public ProblemDetail handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         var fieldErrors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> new ErrorResponse.FieldError(
-                        error.getField(),
-                        mapValidationCode(error.getCode())
-                ))
+                .map(error -> new FieldError(error.getField(), mapValidationCode(error.getCode())))
                 .toList();
 
-        var response = new ErrorResponse(
-                ErrorCodes.VALIDATION_FAILED,
-                request.getRequestURI(),
-                fieldErrors
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        var problem = buildProblem(HttpStatus.BAD_REQUEST, "Validation Failed", ErrorCodes.VALIDATION_FAILED, request);
+        problem.setProperty("errors", fieldErrors);
+        return problem;
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
-            DataIntegrityViolationException ex, HttpServletRequest request) {
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
         log.warn("Data integrity violation: {}", ex.getMessage());
 
         var code = ErrorCodes.DATA_CONFLICT;
@@ -109,17 +107,27 @@ public class GlobalExceptionHandler {
             code = ErrorCodes.PROFILE_EMAIL_EXISTS;
         }
 
-        var response = new ErrorResponse(code, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        return buildProblem(HttpStatus.CONFLICT, "Data Conflict", code, request);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(
-            Exception ex, HttpServletRequest request) {
+    public ProblemDetail handleGenericException(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
 
-        var response = new ErrorResponse(ErrorCodes.INTERNAL_ERROR, request.getRequestURI());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        return buildProblem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", ErrorCodes.INTERNAL_ERROR, request);
+    }
+
+    /**
+     * Build RFC 7807 ProblemDetail with custom "code" property for i18n.
+     */
+    private ProblemDetail buildProblem(HttpStatus status, String title, String code, HttpServletRequest request) {
+        var problem = ProblemDetail.forStatus(status);
+        problem.setType(URI.create("about:blank"));
+        problem.setTitle(title);
+        problem.setDetail(code); // Code as detail for quick reference
+        problem.setInstance(URI.create(request.getRequestURI()));
+        problem.setProperty("code", code); // Custom: i18n error code
+        return problem;
     }
 
     private String mapValidationCode(String validationCode) {
@@ -136,4 +144,9 @@ public class GlobalExceptionHandler {
             default -> ErrorCodes.VALIDATION_FIELD_INVALID;
         };
     }
+
+    /**
+     * Field validation error for RFC 7807 "errors" extension.
+     */
+    public record FieldError(String field, String code) {}
 }
