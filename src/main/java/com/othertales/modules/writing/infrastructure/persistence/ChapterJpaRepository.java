@@ -13,10 +13,12 @@ public interface ChapterJpaRepository extends JpaRepository<ChapterEntity, UUID>
     @Query("SELECT c FROM ChapterEntity c WHERE c.project.id = :projectId ORDER BY c.orderIndex ASC")
     List<ChapterEntity> findByProjectIdOrderByOrderIndex(@Param("projectId") UUID projectId);
 
-    Optional<ChapterEntity> findByIdAndProjectId(UUID id, UUID projectId);
+    @Query("SELECT c FROM ChapterEntity c WHERE c.id = :id AND c.project.id = :projectId")
+    Optional<ChapterEntity> findByIdAndProjectId(@Param("id") UUID id, @Param("projectId") UUID projectId);
 
     @Query("SELECT COALESCE(MAX(c.orderIndex), -1) + 1 FROM ChapterEntity c WHERE c.project.id = :projectId")
     int findNextOrderIndex(@Param("projectId") UUID projectId);
 
-    long countByProjectId(UUID projectId);
+    @Query("SELECT COUNT(c) FROM ChapterEntity c WHERE c.project.id = :projectId")
+    long countByProjectId(@Param("projectId") UUID projectId);
 }
