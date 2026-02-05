@@ -3,6 +3,8 @@ package com.othertales.common.infrastructure.web;
 import com.othertales.common.domain.BusinessException;
 import com.othertales.common.domain.ErrorCodes;
 import com.othertales.modules.identity.domain.ProfileNotFoundException;
+import com.othertales.modules.writing.domain.ChapterAccessDeniedException;
+import com.othertales.modules.writing.domain.ChapterNotFoundException;
 import com.othertales.modules.writing.domain.InvalidProjectTitleException;
 import com.othertales.modules.writing.domain.ProjectNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -53,6 +55,24 @@ public class GlobalExceptionHandler {
 
         var response = new ErrorResponse(ErrorCodes.PROJECT_NOT_FOUND, request.getRequestURI());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(ChapterNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleChapterNotFound(
+            ChapterNotFoundException ex, HttpServletRequest request) {
+        log.debug("Chapter not found: {}", ex.getMessage());
+
+        var response = new ErrorResponse(ErrorCodes.CHAPTER_NOT_FOUND, request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(ChapterAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleChapterAccessDenied(
+            ChapterAccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Chapter access denied: {}", ex.getMessage());
+
+        var response = new ErrorResponse(ErrorCodes.CHAPTER_ACCESS_DENIED, request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
 
     @ExceptionHandler(InvalidProjectTitleException.class)
