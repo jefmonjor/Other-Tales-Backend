@@ -15,7 +15,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -65,12 +65,12 @@ public class ConsentLogEntity {
     private String userAgent;
 
     @Column(name = "recorded_at", nullable = false, updatable = false)
-    private OffsetDateTime recordedAt;
+    private Instant recordedAt;
 
     @PrePersist
     void prePersist() {
         if (recordedAt == null) {
-            recordedAt = OffsetDateTime.now();
+            recordedAt = Instant.now();
         }
     }
 
@@ -90,7 +90,7 @@ public class ConsentLogEntity {
         log.setConsentGiven(consentGiven);
         log.setIpAddress(ipAddress);
         log.setUserAgent(userAgent);
-        log.setRecordedAt(OffsetDateTime.now());
+        log.setRecordedAt(Instant.now());
         return log;
     }
 }

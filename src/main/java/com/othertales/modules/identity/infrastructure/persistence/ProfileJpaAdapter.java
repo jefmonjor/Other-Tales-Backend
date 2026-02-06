@@ -7,6 +7,10 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * AUDIT FIX #3 (FASE 1.3): save() now checks if entity exists and
+ * reuses it to preserve isNew=false for updates.
+ */
 @Repository
 public class ProfileJpaAdapter implements ProfileRepository {
 
@@ -20,21 +24,22 @@ public class ProfileJpaAdapter implements ProfileRepository {
 
     @Override
     public Profile save(Profile profile) {
-        var entity = mapper.toEntity(profile);
+        var existingEntity = jpaRepository.findById(profile.getId()).orElse(null);
+        var entity = existingEntity != null
+                ? mapper.toEntity(profile, existingEntity)
+                : mapper.toEntity(profile);
         var savedEntity = jpaRepository.save(entity);
         return mapper.toDomain(savedEntity);
     }
 
     @Override
     public Optional<Profile> findById(UUID id) {
-        return jpaRepository.findById(id)
-                .map(mapper::toDomain);
+        return jpaRepository.findById(id).map(mapper::toDomain);
     }
 
     @Override
     public Optional<Profile> findByEmail(String email) {
-        return jpaRepository.findByEmail(email)
-                .map(mapper::toDomain);
+        return jpaRepository.findByEmail(email).map(mapper::toDomain);
     }
 
     @Override

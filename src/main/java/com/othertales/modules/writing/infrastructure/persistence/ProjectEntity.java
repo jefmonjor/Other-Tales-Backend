@@ -23,6 +23,9 @@ import org.springframework.data.domain.Persistable;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * AUDIT FIX #11 (FASE 3.2): Unified targetWordCount validation to @Min(1).
+ */
 @Entity
 @Table(name = "projects", schema = "public")
 @Getter

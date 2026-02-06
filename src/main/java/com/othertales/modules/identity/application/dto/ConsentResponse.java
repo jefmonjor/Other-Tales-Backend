@@ -2,7 +2,7 @@ package com.othertales.modules.identity.application.dto;
 
 import com.othertales.modules.identity.domain.ConsentType;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 
 /**
  * Response DTO for consent update confirmation.
@@ -14,5 +14,5 @@ import java.time.OffsetDateTime;
 public record ConsentResponse(
         ConsentType consentType,
         boolean granted,
-        OffsetDateTime recordedAt
+        Instant recordedAt
 ) {}

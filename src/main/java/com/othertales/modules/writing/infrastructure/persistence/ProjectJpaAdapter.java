@@ -10,6 +10,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * AUDIT FIX #3 (FASE 1.3): save() now checks if entity exists and
+ * reuses it to preserve isNew=false for updates.
+ */
 @Repository
 public class ProjectJpaAdapter implements ProjectRepository {
 
@@ -23,21 +27,22 @@ public class ProjectJpaAdapter implements ProjectRepository {
 
     @Override
     public Project save(Project project) {
-        var entity = mapper.toEntity(project);
+        var existingEntity = jpaRepository.findById(project.getId()).orElse(null);
+        var entity = existingEntity != null
+                ? mapper.toEntity(project, existingEntity)
+                : mapper.toEntity(project);
         var savedEntity = jpaRepository.save(entity);
         return mapper.toDomain(savedEntity);
     }
 
     @Override
     public Optional<Project> findById(UUID id) {
-        return jpaRepository.findByIdAndDeletedFalse(id)
-                .map(mapper::toDomain);
+        return jpaRepository.findByIdAndDeletedFalse(id).map(mapper::toDomain);
     }
 
     @Override
     public Optional<Project> findByIdAndUserId(UUID id, UUID userId) {
-        return jpaRepository.findByIdAndUserIdAndDeletedFalse(id, userId)
-                .map(mapper::toDomain);
+        return jpaRepository.findByIdAndUserIdAndDeletedFalse(id, userId).map(mapper::toDomain);
     }
 
     @Override
@@ -63,7 +68,6 @@ public class ProjectJpaAdapter implements ProjectRepository {
         if (sortBy == null || sortBy.isBlank()) {
             return Sort.by(Sort.Direction.DESC, "updatedAt");
         }
-
         return switch (sortBy.toLowerCase()) {
             case "title" -> Sort.by(Sort.Direction.ASC, "title");
             case "title_desc" -> Sort.by(Sort.Direction.DESC, "title");

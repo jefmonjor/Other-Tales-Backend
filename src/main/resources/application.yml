@@ -39,7 +39,7 @@ spring:
     # Si detecta tablas existentes, asume que es la versión base 0
     baseline-version: 0
     # No valida checksums de scripts - evita crashes por diferencias manuales
-    validate-on-migrate: false
+    validate-on-migrate: true
     # Desactiva flyway:clean para evitar borrados accidentales
     clean-disabled: true
 

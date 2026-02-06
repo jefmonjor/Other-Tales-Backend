@@ -1,11 +1,9 @@
 package com.othertales.modules.writing.application.dto;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record CreateProjectRequest(
-        @NotBlank(message = "{project.title.required}")
+public record UpdateProjectRequest(
         @Size(min = 1, max = 255, message = "{project.title.size}")
         String title,
 
@@ -17,10 +15,4 @@ public record CreateProjectRequest(
 
         @Min(value = 1, message = "{project.targetWordCount.min}")
         Integer targetWordCount
-) {
-    public CreateProjectRequest {
-        if (targetWordCount == null) {
-            targetWordCount = 50000;
-        }
-    }
-}
+) {}

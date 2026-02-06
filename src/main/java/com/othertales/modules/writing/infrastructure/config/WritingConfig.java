@@ -1,15 +1,11 @@
 package com.othertales.modules.writing.infrastructure.config;
 
-import com.othertales.modules.writing.application.port.ProjectRepository;
-import com.othertales.modules.writing.application.usecase.CreateProjectUseCase;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Writing module configuration.
+ * ProjectService and ChapterService are @Service annotated and auto-discovered.
+ */
 @Configuration
 public class WritingConfig {
-
-    @Bean
-    public CreateProjectUseCase createProjectUseCase(ProjectRepository projectRepository) {
-        return new CreateProjectUseCase(projectRepository);
-    }
 }

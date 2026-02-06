@@ -4,41 +4,43 @@ import com.othertales.modules.identity.domain.PlanType;
 import com.othertales.modules.identity.domain.Profile;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneOffset;
-
+/**
+ * AUDIT FIX #3 (FASE 1.3): toEntity now accepts existingEntity parameter
+ * to preserve isNew=false state for updates.
+ * AUDIT FIX #12 (FASE 3.3): Removed OffsetDateTime conversions - all Instant now.
+ */
 @Component
 public class ProfileMapper {
 
-    // De DOMINIO (Instant) a ENTIDAD (OffsetDateTime)
     public ProfileEntity toEntity(Profile profile) {
         var entity = new ProfileEntity();
+        applyToEntity(entity, profile);
+        return entity;
+    }
+
+    public ProfileEntity toEntity(Profile profile, ProfileEntity existingEntity) {
+        applyToEntity(existingEntity, profile);
+        return existingEntity;
+    }
+
+    private void applyToEntity(ProfileEntity entity, Profile profile) {
         entity.setId(profile.getId());
         entity.setEmail(profile.getEmail());
         entity.setFullName(profile.getFullName());
         entity.setPlanType(toEntityPlanType(profile.getPlanType()));
-
-        // FIX: Convertir Instant -> OffsetDateTime
-        if (profile.getCreatedAt() != null) {
-            entity.setCreatedAt(profile.getCreatedAt().atOffset(ZoneOffset.UTC));
-        }
-        if (profile.getUpdatedAt() != null) {
-            entity.setUpdatedAt(profile.getUpdatedAt().atOffset(ZoneOffset.UTC));
-        }
-
+        entity.setCreatedAt(profile.getCreatedAt());
+        entity.setUpdatedAt(profile.getUpdatedAt());
         entity.setVersion(profile.getVersion());
-        return entity;
     }
 
-    // De ENTIDAD (OffsetDateTime) a DOMINIO (Instant)
     public Profile toDomain(ProfileEntity entity) {
         return Profile.reconstitute(
                 entity.getId(),
                 entity.getEmail(),
                 entity.getFullName(),
                 toDomainPlanType(entity.getPlanType()),
-                // FIX: Convertir OffsetDateTime -> Instant
-                entity.getCreatedAt() != null ? entity.getCreatedAt().toInstant() : null,
-                entity.getUpdatedAt() != null ? entity.getUpdatedAt().toInstant() : null,
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
                 entity.getVersion()
         );
     }
