@@ -46,6 +46,9 @@ public class ProfileEntity implements Persistable<UUID> {
     @Column(name = "full_name")
     private String fullName;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "plan_type", nullable = false)
     private PlanTypeEntity planType = PlanTypeEntity.FREE;

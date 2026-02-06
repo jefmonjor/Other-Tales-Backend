@@ -5,8 +5,6 @@ import com.othertales.modules.identity.application.dto.UpdateConsentRequest;
 import com.othertales.modules.identity.application.port.AuditLogPort;
 import com.othertales.modules.identity.application.port.ConsentLogRepository;
 import com.othertales.modules.identity.application.port.ProfileRepository;
-import com.othertales.modules.identity.domain.ConsentType;
-import com.othertales.modules.identity.domain.Profile;
 import com.othertales.modules.identity.domain.ProfileNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,12 +59,11 @@ public class UpdateConsentUseCase {
                 .orElseThrow(() -> new ProfileNotFoundException(userId));
 
         // Capture previous value BEFORE mutation
-        var previousValue = getConsentValue(profile, request.consentType());
+        var previousValue = profile.getConsentValue(request.consentType());
 
-        // Domain mutation would go here if Profile had consent fields.
-        // For now, consent is managed at infrastructure level via the repository.
-        // The profile save triggers the updated_at change.
-        var saved = profileRepository.save(profile);
+        // Mutate consent on the domain object
+        profile.updateConsent(request.consentType(), request.granted());
+        profileRepository.save(profile);
 
         var now = Instant.now();
 
@@ -93,10 +90,4 @@ public class UpdateConsentUseCase {
         return new ConsentResponse(request.consentType(), request.granted(), now);
     }
 
-    private boolean getConsentValue(Profile profile, ConsentType type) {
-        // Profile domain object doesn't expose consent fields directly,
-        // so we return false as default. In a full implementation,
-        // this would read from the profile's consent state.
-        return false;
-    }
 }

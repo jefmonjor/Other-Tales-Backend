@@ -27,7 +27,14 @@ public class ProfileMapper {
         entity.setId(profile.getId());
         entity.setEmail(profile.getEmail());
         entity.setFullName(profile.getFullName());
+        entity.setAvatarUrl(profile.getAvatarUrl());
         entity.setPlanType(toEntityPlanType(profile.getPlanType()));
+        entity.setTermsAccepted(profile.isTermsAccepted());
+        entity.setTermsAcceptedAt(profile.getTermsAcceptedAt());
+        entity.setPrivacyAccepted(profile.isPrivacyAccepted());
+        entity.setPrivacyAcceptedAt(profile.getPrivacyAcceptedAt());
+        entity.setMarketingAccepted(profile.isMarketingAccepted());
+        entity.setMarketingAcceptedAt(profile.getMarketingAcceptedAt());
         entity.setCreatedAt(profile.getCreatedAt());
         entity.setUpdatedAt(profile.getUpdatedAt());
         entity.setVersion(profile.getVersion());
@@ -38,7 +45,14 @@ public class ProfileMapper {
                 entity.getId(),
                 entity.getEmail(),
                 entity.getFullName(),
+                entity.getAvatarUrl(),
                 toDomainPlanType(entity.getPlanType()),
+                entity.isTermsAccepted(),
+                entity.getTermsAcceptedAt(),
+                entity.isPrivacyAccepted(),
+                entity.getPrivacyAcceptedAt(),
+                entity.isMarketingAccepted(),
+                entity.getMarketingAcceptedAt(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
                 entity.getVersion()

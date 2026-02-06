@@ -9,6 +9,16 @@ public class ChapterMapper {
 
     public ChapterEntity toEntity(Chapter chapter, ProjectEntity project) {
         var entity = new ChapterEntity();
+        applyToEntity(entity, chapter, project);
+        return entity;
+    }
+
+    public ChapterEntity toEntity(Chapter chapter, ProjectEntity project, ChapterEntity existingEntity) {
+        applyToEntity(existingEntity, chapter, project);
+        return existingEntity;
+    }
+
+    private void applyToEntity(ChapterEntity entity, Chapter chapter, ProjectEntity project) {
         entity.setId(chapter.getId());
         entity.setProject(project);
         entity.setTitle(chapter.getTitle());
@@ -17,7 +27,6 @@ public class ChapterMapper {
         entity.setStatus(toEntityStatus(chapter.getStatus()));
         entity.setCreatedAt(chapter.getCreatedAt());
         entity.setUpdatedAt(chapter.getUpdatedAt());
-        return entity;
     }
 
     public Chapter toDomain(ChapterEntity entity) {

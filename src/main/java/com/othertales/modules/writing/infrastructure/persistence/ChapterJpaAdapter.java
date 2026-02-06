@@ -28,7 +28,10 @@ public class ChapterJpaAdapter implements ChapterRepository {
     @Override
     public Chapter save(Chapter chapter) {
         var project = projectJpaRepository.getReferenceById(chapter.getProjectId());
-        var entity = mapper.toEntity(chapter, project);
+        var existingEntity = jpaRepository.findById(chapter.getId()).orElse(null);
+        var entity = existingEntity != null
+                ? mapper.toEntity(chapter, project, existingEntity)
+                : mapper.toEntity(chapter, project);
         var saved = jpaRepository.save(entity);
         return mapper.toDomain(saved);
     }
