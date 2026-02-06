@@ -1,30 +1,33 @@
 package com.othertales.modules.writing.application.usecase;
 
 import com.othertales.modules.writing.application.dto.ChapterResponse;
-import com.othertales.modules.writing.application.dto.SaveChapterRequest;
+import com.othertales.modules.writing.application.dto.CreateChapterRequest;
+import com.othertales.modules.writing.application.dto.UpdateChapterRequest;
+import com.othertales.modules.writing.application.port.ChapterRepository;
+import com.othertales.modules.writing.application.port.ProjectRepository;
+import com.othertales.modules.writing.domain.Chapter;
 import com.othertales.modules.writing.domain.ChapterAccessDeniedException;
 import com.othertales.modules.writing.domain.ChapterNotFoundException;
 import com.othertales.modules.writing.domain.ProjectNotFoundException;
-import com.othertales.modules.writing.infrastructure.persistence.ChapterEntity;
-import com.othertales.modules.writing.infrastructure.persistence.ChapterJpaRepository;
-import com.othertales.modules.writing.infrastructure.persistence.ProjectJpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * AUDIT FIX #6 (FASE 2.1): Fully decoupled from infrastructure. Uses only domain
+ * objects and port interfaces. No JPA entity or repository imports.
+ * AUDIT FIX #5 (FASE 1.5): Separate create/update/delete/get methods per OpenAPI spec.
+ * AUDIT FIX #15 (FASE 3.5): @Transactional on all operations.
+ */
 @Service
 public class ChapterService {
 
-    private final ChapterJpaRepository chapterRepository;
-    private final ProjectJpaRepository projectRepository;
+    private final ChapterRepository chapterRepository;
+    private final ProjectRepository projectRepository;
 
-    public ChapterService(
-            ChapterJpaRepository chapterRepository,
-            ProjectJpaRepository projectRepository
-    ) {
+    public ChapterService(ChapterRepository chapterRepository, ProjectRepository projectRepository) {
         this.chapterRepository = chapterRepository;
         this.projectRepository = projectRepository;
     }
@@ -39,79 +42,73 @@ public class ChapterService {
                 .toList();
     }
 
-    @Transactional
-    public ChapterResponse createOrUpdateChapter(SaveChapterRequest request, UUID userId) {
-        var projectId = request.projectId();
-        var project = projectRepository.findByIdAndDeletedFalse(projectId)
-                .orElseThrow(() -> new ProjectNotFoundException(projectId));
+    @Transactional(readOnly = true)
+    public ChapterResponse getChapterById(UUID chapterId, UUID userId) {
+        var chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new ChapterNotFoundException(chapterId));
 
-        // SEGURIDAD: Verificar que el usuario es dueño del proyecto
-        if (!project.getUserId().equals(userId)) {
-            throw new ChapterAccessDeniedException(projectId, userId);
+        verifyProjectOwnership(chapter.getProjectId(), userId);
+        return toResponse(chapter);
+    }
+
+    @Transactional
+    public ChapterResponse createChapter(UUID projectId, CreateChapterRequest request, UUID userId) {
+        if (!projectRepository.existsByIdAndUserId(projectId, userId)) {
+            throw new ProjectNotFoundException(projectId);
         }
 
-        ChapterEntity chapter;
-        var now = Instant.now();
+        var orderIndex = request.sortOrder() != null
+                ? request.sortOrder()
+                : chapterRepository.findNextOrderIndex(projectId);
 
-        if (request.id() != null) {
-            // Actualizar capítulo existente
-            chapter = chapterRepository.findById(request.id())
-                    .orElseThrow(() -> new ChapterNotFoundException(request.id()));
+        var chapter = Chapter.create(projectId, request.title(), request.content(), orderIndex);
+        var saved = chapterRepository.save(chapter);
+        return toResponse(saved);
+    }
 
-            // Verificar que el capítulo pertenece al proyecto
-            if (!chapter.getProjectId().equals(projectId)) {
-                throw new ChapterAccessDeniedException(projectId, userId);
-            }
+    @Transactional
+    public ChapterResponse updateChapter(UUID chapterId, UpdateChapterRequest request, UUID userId) {
+        var chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new ChapterNotFoundException(chapterId));
 
-            chapter.setTitle(request.title());
-            chapter.setContent(request.content());
-            if (request.orderIndex() != null) {
-                chapter.setOrderIndex(request.orderIndex());
-            }
-            chapter.setUpdatedAt(now);
-        } else {
-            // Crear nuevo capítulo
-            chapter = new ChapterEntity();
-            chapter.setId(UUID.randomUUID());
-            chapter.setProject(project);
-            chapter.setTitle(request.title());
-            chapter.setContent(request.content());
-            chapter.setOrderIndex(request.orderIndex() != null
-                    ? request.orderIndex()
-                    : chapterRepository.findNextOrderIndex(projectId));
-            chapter.setStatus("DRAFT");
-            chapter.setCreatedAt(now);
-            chapter.setUpdatedAt(now);
+        verifyProjectOwnership(chapter.getProjectId(), userId);
+
+        if (request.title() != null) {
+            chapter.updateTitle(request.title());
+        }
+        if (request.content() != null) {
+            chapter.updateContent(request.content());
         }
 
         var saved = chapterRepository.save(chapter);
         return toResponse(saved);
     }
 
+    @Transactional
+    public void deleteChapter(UUID chapterId, UUID userId) {
+        var chapter = chapterRepository.findById(chapterId)
+                .orElseThrow(() -> new ChapterNotFoundException(chapterId));
+
+        verifyProjectOwnership(chapter.getProjectId(), userId);
+        chapterRepository.deleteById(chapterId);
+    }
+
     private void verifyProjectOwnership(UUID projectId, UUID userId) {
-        var exists = projectRepository.existsByIdAndUserIdAndDeletedFalse(projectId, userId);
-        if (!exists) {
+        if (!projectRepository.existsByIdAndUserId(projectId, userId)) {
             throw new ChapterAccessDeniedException(projectId, userId);
         }
     }
 
-    private ChapterResponse toResponse(ChapterEntity entity) {
+    private ChapterResponse toResponse(Chapter chapter) {
         return new ChapterResponse(
-                entity.getId(),
-                entity.getProjectId(),
-                entity.getTitle(),
-                entity.getContent(),
-                entity.getOrderIndex(),
-                countWords(entity.getContent()),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                chapter.getId(),
+                chapter.getProjectId(),
+                chapter.getTitle(),
+                chapter.getContent(),
+                chapter.getOrderIndex(),
+                chapter.getWordCount(),
+                chapter.getCreatedAt(),
+                chapter.getUpdatedAt()
         );
-    }
-
-    private int countWords(String content) {
-        if (content == null || content.isBlank()) {
-            return 0;
-        }
-        return content.trim().split("\\s+").length;
     }
 }

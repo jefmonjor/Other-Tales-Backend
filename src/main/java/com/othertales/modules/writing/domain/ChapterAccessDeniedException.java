@@ -1,23 +1,12 @@
 package com.othertales.modules.writing.domain;
 
+import com.othertales.common.domain.ErrorCodes;
+
 import java.util.UUID;
 
-public class ChapterAccessDeniedException extends RuntimeException {
-
-    private final UUID projectId;
-    private final UUID userId;
+public class ChapterAccessDeniedException extends com.othertales.common.domain.AccessDeniedException {
 
     public ChapterAccessDeniedException(UUID projectId, UUID userId) {
-        super("User " + userId + " does not have access to project " + projectId);
-        this.projectId = projectId;
-        this.userId = userId;
-    }
-
-    public UUID getProjectId() {
-        return projectId;
-    }
-
-    public UUID getUserId() {
-        return userId;
+        super("User " + userId + " does not have access to project " + projectId, ErrorCodes.CHAPTER_ACCESS_DENIED);
     }
 }

@@ -1,7 +1,6 @@
 package com.othertales.common.infrastructure.persistence;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,7 +14,7 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -53,7 +52,6 @@ public class AuditLogEntity {
 
     @Column(name = "details", columnDefinition = "jsonb", updatable = false)
     @JdbcTypeCode(SqlTypes.JSON)
-    @Convert(converter = JsonbConverter.class)
     private Map<String, Object> details = new HashMap<>();
 
     @Column(name = "ip_address", length = 45, updatable = false)
@@ -63,12 +61,12 @@ public class AuditLogEntity {
     private String userAgent;
 
     @Column(name = "performed_at", nullable = false, updatable = false)
-    private OffsetDateTime performedAt;
+    private Instant performedAt;
 
     @PrePersist
     void prePersist() {
         if (performedAt == null) {
-            performedAt = OffsetDateTime.now();
+            performedAt = Instant.now();
         }
     }
 
@@ -90,7 +88,7 @@ public class AuditLogEntity {
         log.setDetails(details != null ? details : new HashMap<>());
         log.setIpAddress(ipAddress);
         log.setUserAgent(userAgent);
-        log.setPerformedAt(OffsetDateTime.now());
+        log.setPerformedAt(Instant.now());
         return log;
     }
 

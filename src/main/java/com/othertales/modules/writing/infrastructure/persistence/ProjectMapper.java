@@ -4,11 +4,25 @@ import com.othertales.modules.writing.domain.Project;
 import com.othertales.modules.writing.domain.ProjectStatus;
 import org.springframework.stereotype.Component;
 
+/**
+ * AUDIT FIX #3 (FASE 1.3): toEntity now accepts existingEntity parameter
+ * to preserve isNew=false state for updates.
+ */
 @Component
 public class ProjectMapper {
 
     public ProjectEntity toEntity(Project project) {
         var entity = new ProjectEntity();
+        applyToEntity(entity, project);
+        return entity;
+    }
+
+    public ProjectEntity toEntity(Project project, ProjectEntity existingEntity) {
+        applyToEntity(existingEntity, project);
+        return existingEntity;
+    }
+
+    private void applyToEntity(ProjectEntity entity, Project project) {
         entity.setId(project.getId());
         entity.setUserId(project.getUserId());
         entity.setTitle(project.getTitle());
@@ -22,7 +36,6 @@ public class ProjectMapper {
         entity.setCreatedAt(project.getCreatedAt());
         entity.setUpdatedAt(project.getUpdatedAt());
         entity.setVersion(project.getVersion());
-        return entity;
     }
 
     public Project toDomain(ProjectEntity entity) {

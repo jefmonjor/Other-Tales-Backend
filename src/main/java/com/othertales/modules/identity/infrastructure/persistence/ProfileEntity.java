@@ -19,19 +19,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.domain.Persistable;
 
-import java.time.OffsetDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
- * JPA Entity for user profiles.
- * Maps to the 'profiles' table managed by Supabase Auth.
- *
- * <p>Includes consent tracking fields for GDPR compliance:</p>
- * <ul>
- *   <li>termsAccepted - Terms of Service acceptance</li>
- *   <li>privacyAccepted - Privacy Policy acceptance</li>
- *   <li>marketingAccepted - Marketing communications opt-in</li>
- * </ul>
+ * AUDIT FIX #12 (FASE 3.3): Standardized ALL timestamps to Instant (was OffsetDateTime).
  */
 @Entity
 @Table(name = "profiles", schema = "public")
@@ -54,37 +46,36 @@ public class ProfileEntity implements Persistable<UUID> {
     @Column(name = "full_name")
     private String fullName;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "plan_type", nullable = false)
     private PlanTypeEntity planType = PlanTypeEntity.FREE;
-
-    // ========== CONSENT FIELDS (GDPR Compliance) ==========
 
     @Column(name = "terms_accepted", nullable = false)
     private boolean termsAccepted = false;
 
     @Column(name = "terms_accepted_at")
-    private OffsetDateTime termsAcceptedAt;
+    private Instant termsAcceptedAt;
 
     @Column(name = "privacy_accepted", nullable = false)
     private boolean privacyAccepted = false;
 
     @Column(name = "privacy_accepted_at")
-    private OffsetDateTime privacyAcceptedAt;
+    private Instant privacyAcceptedAt;
 
     @Column(name = "marketing_accepted", nullable = false)
     private boolean marketingAccepted = false;
 
     @Column(name = "marketing_accepted_at")
-    private OffsetDateTime marketingAcceptedAt;
-
-    // ========== TIMESTAMPS ==========
+    private Instant marketingAcceptedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private OffsetDateTime updatedAt;
+    private Instant updatedAt;
 
     @Version
     private Long version;

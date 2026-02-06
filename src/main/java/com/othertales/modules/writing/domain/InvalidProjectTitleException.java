@@ -1,8 +1,11 @@
 package com.othertales.modules.writing.domain;
 
-public class InvalidProjectTitleException extends RuntimeException {
+import com.othertales.common.domain.ErrorCodes;
+import com.othertales.common.domain.ValidationException;
+
+public class InvalidProjectTitleException extends ValidationException {
 
     public InvalidProjectTitleException() {
-        super("Project title cannot be null or empty");
+        super("Project title cannot be null or empty", ErrorCodes.PROJECT_INVALID_TITLE);
     }
 }

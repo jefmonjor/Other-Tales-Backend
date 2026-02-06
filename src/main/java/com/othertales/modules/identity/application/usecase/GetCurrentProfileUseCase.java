@@ -22,7 +22,11 @@ public class GetCurrentProfileUseCase {
                 profile.getId(),
                 profile.getEmail(),
                 profile.getFullName(),
+                profile.getAvatarUrl(),
                 profile.getPlanType().name(),
+                profile.isTermsAccepted(),
+                profile.isPrivacyAccepted(),
+                profile.isMarketingAccepted(),
                 profile.getCreatedAt()
         );
     }

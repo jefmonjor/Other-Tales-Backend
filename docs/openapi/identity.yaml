@@ -1,0 +1,152 @@
+openapi: 3.1.0
+info:
+  title: Other Tales - Identity API
+  description: User profile and GDPR consent management endpoints
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+
+paths:
+  /profiles/me:
+    get:
+      tags:
+        - Profiles
+      summary: Get current user profile
+      description: Returns the authenticated user's profile based on JWT subject
+      operationId: getCurrentProfile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Profile not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /user/consent:
+    put:
+      tags:
+        - Consent
+      summary: Update user consent
+      description: Updates a specific GDPR consent type for the authenticated user
+      operationId: updateConsent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConsentRequest'
+      responses:
+        '200':
+          description: Consent updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Profile not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProfileResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        planType:
+          type: string
+          enum: [FREE, PRO]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateConsentRequest:
+      type: object
+      required:
+        - consentType
+        - granted
+      properties:
+        consentType:
+          type: string
+          enum: [TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_COMMUNICATIONS]
+          description: Type of consent to update
+        granted:
+          type: boolean
+          description: Whether consent is granted or revoked
+
+    ConsentResponse:
+      type: object
+      properties:
+        consentType:
+          type: string
+          enum: [TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_COMMUNICATIONS]
+        granted:
+          type: boolean
+        recordedAt:
+          type: string
+          format: date-time
+
+    ProblemDetail:
+      type: object
+      description: RFC 7807 Problem Details
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri

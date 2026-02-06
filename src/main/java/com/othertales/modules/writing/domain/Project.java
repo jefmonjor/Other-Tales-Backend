@@ -122,7 +122,7 @@ public class Project {
     }
 
     private static void validateTargetWordCount(int targetWordCount) {
-        if (targetWordCount < 0) {
+        if (targetWordCount < 1) {
             throw new InvalidTargetWordCountException();
         }
     }
