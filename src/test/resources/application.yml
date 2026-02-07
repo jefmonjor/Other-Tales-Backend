@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: other-tales-api-test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    username: sa
+    password: sa
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    properties:
+      hibernate:
+        format_sql: true
+    defer-datasource-initialization: false
+
+  flyway:
+    enabled: false # Disable flyway for simple context load test to avoid migration issues with H2/Postgres compat for now
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://example.com/.well-known/jwks.json # Dummy URL
+
+app:
+  security:
+    jwt:
+      issuer: https://example.com/auth/v1 # Dummy issuer

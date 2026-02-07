@@ -7,37 +7,6 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/$PROJECT_ID/other-tales-backend']
 
-  # 3. Deploy to Cloud Run with robust argument formatting
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-      - 'run'
-      - 'deploy'
-      - 'other-tales-backend'
-      - '--image'
-      - 'gcr.io/$PROJECT_ID/other-tales-backend'
-      - '--region'
-      - 'europe-southwest1'
-      - '--platform'
-      - 'managed'
-      - '--port'
-      - '8080'
-      - '--allow-unauthenticated'
-      - '--timeout'
-      - '300s'
-      - '--memory'
-      - '1Gi'
-      - '--set-env-vars'
-      - 'SERVER_PORT=8080'
-      - '--set-env-vars'
-      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://db.gsslwdruiqtlztupekcd.supabase.co:5432/postgres?sslmode=require'
-      - '--set-env-vars'
-      - 'SPRING_DATASOURCE_USERNAME=postgres'
-      - '--set-env-vars'
-      - 'SPRING_DATASOURCE_PASSWORD=sewweG-jeqwub-9bywny'
-      - '--set-env-vars'
-      - 'SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=https://gsslwdruiqtlztupekcd.supabase.co/auth/v1/.well-known/jwks.json'
-
 images:
   - 'gcr.io/$PROJECT_ID/other-tales-backend'
 

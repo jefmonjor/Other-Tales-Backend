@@ -10,29 +10,29 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtClaimNames;
-import org.springframework.security.oauth2.jwt.JwtClaimValidator;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 
 /**
  * Security configuration for Other Tales API.
  *
- * <p>Implements bulletproof security with:</p>
+ * <p>
+ * Implements bulletproof security with:
+ * </p>
  * <ul>
- *   <li>Stateless session management (JWT-based)</li>
- *   <li>Strict CORS policy (only allowed origins)</li>
- *   <li>JWT validation with signature, expiration, and issuer checks</li>
- *   <li>Public health endpoints for Cloud Run</li>
+ * <li>Stateless session management (JWT-based)</li>
+ * <li>Strict CORS policy (only allowed origins)</li>
+ * <li>JWT validation with HS256 signature (Supabase Legacy Secret)</li>
+ * <li>Public health endpoints for Cloud Run</li>
  * </ul>
  */
 @Configuration
@@ -44,13 +44,11 @@ public class SecurityConfig {
     private static final List<String> ALLOWED_ORIGINS = List.of(
             "http://localhost:3000",
             "http://localhost:5173",
-            "https://other-tales.vercel.app",
-            "https://*.vercel.app"
-    );
+            "https://other-tales-app.vercel.app", // He corregido tu URL de Vercel (la que pusiste en el chat)
+            "https://*.vercel.app");
 
     private static final List<String> ALLOWED_METHODS = List.of(
-            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
-    );
+            "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
 
     private static final List<String> ALLOWED_HEADERS = List.of(
             "Authorization",
@@ -58,11 +56,11 @@ public class SecurityConfig {
             "X-Requested-With",
             "Accept",
             "Origin",
-            "X-User-Id"
-    );
+            "X-User-Id");
 
-    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
-    private String jwkSetUri;
+    // CAMBIO 1: Leemos el secreto, no la URI
+    @Value("${SUPABASE_JWT_SECRET}")
+    private String jwtSecret;
 
     @Value("${app.security.jwt.issuer:https://gsslwdruiqtlztupekcd.supabase.co/auth/v1}")
     private String jwtIssuer;
@@ -75,57 +73,58 @@ public class SecurityConfig {
         log.info("Configuring security filter chain - Production Mode");
 
         http
-            // Disable CSRF (stateless API with JWT)
-            .csrf(csrf -> csrf.disable())
+                // Disable CSRF (stateless API with JWT)
+                .csrf(csrf -> csrf.disable())
 
-            // Configure strict CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // Configure strict CORS
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-            // Stateless session management (no server-side sessions)
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
+                // Stateless session management (no server-side sessions)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-            // Authorization rules
-            .authorizeHttpRequests(auth -> auth
-                // PUBLIC: Health checks for Cloud Run (CRITICAL: 401 = container killed)
-                .requestMatchers("/", "/actuator/health", "/actuator/health/**", "/api/health").permitAll()
+                // Authorization rules
+                .authorizeHttpRequests(auth -> auth
+                        // PUBLIC: Health checks for Cloud Run (CRITICAL: 401 = container killed)
+                        .requestMatchers("/", "/actuator/health", "/actuator/health/**", "/api/health").permitAll()
 
-                // PUBLIC: OpenAPI documentation
-                .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**").permitAll()
+                        // PUBLIC: OpenAPI documentation
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**")
+                        .permitAll()
 
-                // PUBLIC: Actuator info endpoint
-                .requestMatchers("/actuator/info").permitAll()
+                        // PUBLIC: Actuator info endpoint
+                        .requestMatchers("/actuator/info").permitAll()
 
-                // AUTHENTICATED: All API endpoints require valid JWT
-                .requestMatchers("/api/**").authenticated()
+                        // AUTHENTICATED: All API endpoints require valid JWT
+                        .requestMatchers("/api/**").authenticated()
 
-                // DENY: Everything else
-                .anyRequest().denyAll()
-            )
+                        // DENY: Everything else
+                        .anyRequest().denyAll())
 
-            // OAuth2 Resource Server with custom JWT decoder
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.decoder(jwtDecoder()))
-            );
+                // OAuth2 Resource Server with custom JWT decoder
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.decoder(jwtDecoder())));
 
         log.info("Security filter chain configured successfully");
         return http.build();
     }
 
     /**
-     * Custom JWT decoder with strict validation:
-     * - Signature verification (via JWK Set)
-     * - Expiration check with configurable clock skew
-     * - Issuer validation (Supabase)
-     * - Subject claim presence
+     * Custom JWT decoder using HS256 (Shared Secret) from Supabase.
      */
     @Bean
     public JwtDecoder jwtDecoder() {
-        log.info("Configuring JWT decoder with JWK Set URI: {}", jwkSetUri);
+        log.info("Configuring JWT decoder with Shared Secret (HS256)");
         log.info("Expected JWT issuer: {}", jwtIssuer);
 
-        var jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+        // CAMBIO 2: Decodificar Base64 y crear clave HS256
+        byte[] secretBytes = Base64.getDecoder().decode(jwtSecret);
+        var secretKey = new SecretKeySpec(secretBytes, "HmacSHA256");
+
+        // Construir el decodificador usando la clave secreta en lugar de la URL
+        var jwtDecoder = NimbusJwtDecoder.withSecretKey(secretKey)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
 
         // Timestamp validator with clock skew tolerance
         var timestampValidator = new JwtTimestampValidator(Duration.ofSeconds(clockSkewSeconds));
@@ -133,31 +132,27 @@ public class SecurityConfig {
         // Issuer validator
         OAuth2TokenValidator<Jwt> issuerValidator = new JwtClaimValidator<String>(
                 JwtClaimNames.ISS,
-                issuer -> issuer != null && issuer.equals(jwtIssuer)
-        );
+                issuer -> issuer != null && issuer.equals(jwtIssuer));
 
         // Subject (user ID) must be present
         OAuth2TokenValidator<Jwt> subjectValidator = new JwtClaimValidator<String>(
                 JwtClaimNames.SUB,
-                sub -> sub != null && !sub.isBlank()
-        );
+                sub -> sub != null && !sub.isBlank());
 
         // Combine all validators
         var validators = new DelegatingOAuth2TokenValidator<>(
                 timestampValidator,
                 issuerValidator,
-                subjectValidator
-        );
+                subjectValidator);
 
         jwtDecoder.setJwtValidator(validators);
 
-        log.info("JWT decoder configured with timestamp, issuer, and subject validation");
+        log.info("JWT decoder configured correctly with HS256 signature validation");
         return jwtDecoder;
     }
 
     /**
      * CORS configuration with strict origin policy.
-     * Only allows requests from Vercel deployment and localhost for development.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
