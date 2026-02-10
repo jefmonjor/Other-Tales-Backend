@@ -63,6 +63,7 @@ public class ChapterService {
 
         var chapter = Chapter.create(projectId, request.title(), request.content(), orderIndex);
         var saved = chapterRepository.save(chapter);
+        syncProjectWordCount(projectId, userId);
         return toResponse(saved);
     }
 
@@ -81,6 +82,7 @@ public class ChapterService {
         }
 
         var saved = chapterRepository.save(chapter);
+        syncProjectWordCount(chapter.getProjectId(), userId);
         return toResponse(saved);
     }
 
@@ -90,7 +92,18 @@ public class ChapterService {
                 .orElseThrow(() -> new ChapterNotFoundException(chapterId));
 
         verifyProjectOwnership(chapter.getProjectId(), userId);
+        var projectId = chapter.getProjectId();
         chapterRepository.deleteById(chapterId);
+        syncProjectWordCount(projectId, userId);
+    }
+
+    private void syncProjectWordCount(UUID projectId, UUID userId) {
+        var chapters = chapterRepository.findByProjectIdOrderByOrderIndex(projectId);
+        var totalWords = chapters.stream().mapToInt(Chapter::getWordCount).sum();
+        var project = projectRepository.findByIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ProjectNotFoundException(projectId));
+        project.updateCurrentWordCount(totalWords);
+        projectRepository.save(project);
     }
 
     private void verifyProjectOwnership(UUID projectId, UUID userId) {

@@ -35,7 +35,6 @@ public class ProjectMapper {
         entity.setDeleted(project.isDeleted());
         entity.setCreatedAt(project.getCreatedAt());
         entity.setUpdatedAt(project.getUpdatedAt());
-        entity.setVersion(project.getVersion());
     }
 
     public Project toDomain(ProjectEntity entity) {

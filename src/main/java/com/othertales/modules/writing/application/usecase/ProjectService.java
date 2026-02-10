@@ -57,15 +57,18 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public ProjectListResponse listByUser(UUID userId, int page, int size, String sortBy) {
-        var projects = projectRepository.findAllByUserId(userId, page, size, sortBy);
+        var safeSize = Math.min(Math.max(size, 1), 100);
+        var safePage = Math.max(page, 0);
+
+        var projects = projectRepository.findAllByUserId(userId, safePage, safeSize, sortBy);
         var totalElements = projectRepository.countByUserId(userId);
-        var totalPages = (int) Math.ceil((double) totalElements / size);
+        var totalPages = (int) Math.ceil((double) totalElements / safeSize);
 
         var content = projects.stream()
                 .map(this::toSummaryResponse)
                 .toList();
 
-        return new ProjectListResponse(content, page, size, totalElements, totalPages);
+        return new ProjectListResponse(content, safePage, safeSize, totalElements, totalPages);
     }
 
     @Transactional
@@ -121,6 +124,7 @@ public class ProjectService {
                 project.getGenre(),
                 project.getCurrentWordCount(),
                 project.getTargetWordCount(),
+                project.getCoverUrl(),
                 project.getStatus().name(),
                 project.getUpdatedAt()
         );

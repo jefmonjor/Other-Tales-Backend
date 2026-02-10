@@ -18,9 +18,4 @@ public record CreateProjectRequest(
         @Min(value = 1, message = "{project.targetWordCount.min}")
         Integer targetWordCount
 ) {
-    public CreateProjectRequest {
-        if (targetWordCount == null) {
-            targetWordCount = 50000;
-        }
-    }
 }

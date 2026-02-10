@@ -52,8 +52,7 @@ public class SecurityConfig {
             "Content-Type",
             "X-Requested-With",
             "Accept",
-            "Origin",
-            "X-User-Id");
+            "Origin");
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwksUri;
@@ -99,7 +98,15 @@ public class SecurityConfig {
 
                 // OAuth2 Resource Server with custom JWT decoder
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.decoder(jwtDecoder())));
+                        .jwt(jwt -> jwt.decoder(jwtDecoder()))
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/problem+json");
+                            response.setStatus(401);
+                            var body = """
+                                {"type":"about:blank","title":"Unauthorized","status":401,"detail":"AUTH_INVALID_TOKEN","instance":"%s","code":"AUTH_INVALID_TOKEN"}
+                                """.formatted(request.getRequestURI()).trim();
+                            response.getWriter().write(body);
+                        }));
 
         log.info("Security filter chain configured successfully");
         return http.build();

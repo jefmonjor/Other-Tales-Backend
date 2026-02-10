@@ -153,6 +153,16 @@ public class Profile {
         this.updatedAt = now;
     }
 
+    public void updateFullName(String fullName) {
+        this.fullName = fullName;
+        this.updatedAt = Instant.now();
+    }
+
+    public void updateAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+        this.updatedAt = Instant.now();
+    }
+
     public boolean getConsentValue(ConsentType consentType) {
         return switch (consentType) {
             case TERMS_OF_SERVICE -> termsAccepted;

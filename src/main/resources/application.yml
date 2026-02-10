@@ -65,6 +65,7 @@ app:
 server:
   port: ${PORT:8080}
   address: 0.0.0.0
+  forward-headers-strategy: framework
   error:
     include-message: always
     include-binding-errors: always
