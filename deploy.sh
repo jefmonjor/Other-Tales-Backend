@@ -7,7 +7,6 @@ set -euo pipefail
 
 # 1. Configuración y Variables
 # -----------------------------------------------------------------------------
-# Asegúrate de tener estas variables exportadas antes de ejecutar, o defínelas aquí por defecto.
 PROJECT_ID="${GCP_PROJECT_ID:?ERROR: Falta la variable GCP_PROJECT_ID}"
 DB_PASSWORD="${SUPABASE_DB_PASSWORD:?ERROR: Falta la variable SUPABASE_DB_PASSWORD}"
 
@@ -16,7 +15,7 @@ SERVICE_NAME="other-tales-api"
 IMAGE_NAME="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
 # Configuración de Supabase
-SUPABASE_PROJECT_REF="gsslwdruiqtlztupekcd" # Tu ID de proyecto fijo
+SUPABASE_PROJECT_REF="gsslwdruiqtlztupekcd"
 SUPABASE_DB_HOST="db.${SUPABASE_PROJECT_REF}.supabase.co"
 SUPABASE_DB_PORT="5432"
 SUPABASE_DB_NAME="postgres"
@@ -39,6 +38,8 @@ gcloud builds submit --tag "$IMAGE_NAME" .
 # -----------------------------------------------------------------------------
 echo "🚀 Desplegando en Cloud Run..."
 
+# NOTA: He quitado --remove-env-vars para evitar el conflicto.
+# Las variables viejas se quedarán ahí pero no molestan.
 gcloud run deploy "$SERVICE_NAME" \
   --image "$IMAGE_NAME" \
   --region "$REGION" \
@@ -47,7 +48,6 @@ gcloud run deploy "$SERVICE_NAME" \
   --memory "1Gi" \
   --cpu "1" \
   --concurrency 80 \
-  --remove-env-vars "SUPABASE_JWT_SECRET" \
   --set-env-vars "SPRING_DATASOURCE_URL=$JDBC_URL" \
   --set-env-vars "SPRING_DATASOURCE_USERNAME=postgres" \
   --set-env-vars "SPRING_DATASOURCE_PASSWORD=$DB_PASSWORD" \
