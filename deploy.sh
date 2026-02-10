@@ -1,59 +1,58 @@
 #!/bin/bash
 # =============================================================================
 # Other Tales Backend - Google Cloud Run Deployment Script
+#
+# Usage:
+#   export GCP_PROJECT_ID="other-tales-backend"
+#   export SUPABASE_DB_PASSWORD="your-password"
+#   ./deploy.sh
 # =============================================================================
 
-set -e
+set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# Configuration (EDIT THESE VALUES)
+# Configuration
 # -----------------------------------------------------------------------------
-PROJECT_ID="${GCP_PROJECT_ID:-your-gcp-project-id}"
+PROJECT_ID="${GCP_PROJECT_ID:?ERROR: Set GCP_PROJECT_ID environment variable}"
 REGION="${GCP_REGION:-us-central1}"
 SERVICE_NAME="other-tales-api"
 IMAGE_NAME="gcr.io/${PROJECT_ID}/${SERVICE_NAME}"
 
-# Supabase Configuration (from environment or secrets)
-SUPABASE_DB_HOST="${SUPABASE_DB_HOST:-db.gsslwdruiqtlztupekcd.supabase.co}"
+# Supabase Configuration
+SUPABASE_PROJECT_REF="${SUPABASE_PROJECT_REF:-gsslwdruiqtlztupekcd}"
+SUPABASE_DB_HOST="${SUPABASE_DB_HOST:-db.${SUPABASE_PROJECT_REF}.supabase.co}"
+SUPABASE_DB_PORT="${SUPABASE_DB_PORT:-5432}"
 SUPABASE_DB_NAME="${SUPABASE_DB_NAME:-postgres}"
 SUPABASE_DB_USER="${SUPABASE_DB_USER:-postgres}"
-SUPABASE_DB_PASSWORD="${SUPABASE_DB_PASSWORD}"
-SUPABASE_PROJECT_REF="${SUPABASE_PROJECT_REF:-gsslwdruiqtlztupekcd}"
+SUPABASE_DB_PASSWORD="${SUPABASE_DB_PASSWORD:?ERROR: Set SUPABASE_DB_PASSWORD environment variable}"
 
-# -----------------------------------------------------------------------------
-# Validation
-# -----------------------------------------------------------------------------
-if [ -z "$SUPABASE_DB_PASSWORD" ]; then
-    echo "ERROR: SUPABASE_DB_PASSWORD environment variable is required"
-    echo "Usage: SUPABASE_DB_PASSWORD='your-password' ./deploy.sh"
-    exit 1
-fi
-
-if [ "$PROJECT_ID" == "your-gcp-project-id" ]; then
-    echo "ERROR: Set GCP_PROJECT_ID environment variable"
-    echo "Usage: GCP_PROJECT_ID='my-project' SUPABASE_DB_PASSWORD='xxx' ./deploy.sh"
-    exit 1
-fi
+# Derived URLs
+DATASOURCE_URL="jdbc:postgresql://${SUPABASE_DB_HOST}:${SUPABASE_DB_PORT}/${SUPABASE_DB_NAME}?sslmode=require"
+JWKS_URI="https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1/.well-known/jwks.json"
+JWT_ISSUER="https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1"
 
 echo "=========================================="
-echo "Deploying Other Tales Backend to Cloud Run"
+echo " Other Tales API → Cloud Run"
 echo "=========================================="
-echo "Project:  ${PROJECT_ID}"
-echo "Region:   ${REGION}"
-echo "Service:  ${SERVICE_NAME}"
+echo " Project:  ${PROJECT_ID}"
+echo " Region:   ${REGION}"
+echo " Service:  ${SERVICE_NAME}"
+echo " DB Host:  ${SUPABASE_DB_HOST}"
+echo " JWKS URI: ${JWKS_URI}"
 echo "=========================================="
-
-# -----------------------------------------------------------------------------
-# Step 1: Build the container image using Cloud Build
-# -----------------------------------------------------------------------------
 echo ""
-echo "[1/3] Building container image with Cloud Build..."
+
+# -----------------------------------------------------------------------------
+# Step 1: Build container image with Cloud Build
+# -----------------------------------------------------------------------------
+echo "[1/3] Building container image..."
 echo ""
 
 gcloud builds submit \
     --project="${PROJECT_ID}" \
     --tag="${IMAGE_NAME}:latest" \
     --timeout=15m \
+    --quiet \
     .
 
 # -----------------------------------------------------------------------------
@@ -75,17 +74,16 @@ gcloud run deploy "${SERVICE_NAME}" \
     --min-instances=0 \
     --max-instances=10 \
     --timeout=300 \
-    --set-env-vars="SPRING_PROFILES_ACTIVE=prod" \
-    --set-env-vars="SPRING_DATASOURCE_URL=jdbc:postgresql://${SUPABASE_DB_HOST}:5432/${SUPABASE_DB_NAME}?sslmode=require" \
-    --set-env-vars="SPRING_DATASOURCE_USERNAME=${SUPABASE_DB_USER}" \
-    --set-env-vars="SPRING_DATASOURCE_PASSWORD=${SUPABASE_DB_PASSWORD}" \
-    --set-env-vars="SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1/.well-known/jwks.json"
+    --concurrency=80 \
+    --cpu-throttling \
+    --set-env-vars="^##^SPRING_DATASOURCE_URL=${DATASOURCE_URL}##SPRING_DATASOURCE_USERNAME=${SUPABASE_DB_USER}##SPRING_DATASOURCE_PASSWORD=${SUPABASE_DB_PASSWORD}##SUPABASE_JWKS_URI=${JWKS_URI}##JWT_ISSUER=${JWT_ISSUER}##JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+UseStringDeduplication" \
+    --clear-env-vars="SUPABASE_JWT_SECRET"
 
 # -----------------------------------------------------------------------------
-# Step 3: Get the service URL
+# Step 3: Verify deployment
 # -----------------------------------------------------------------------------
 echo ""
-echo "[3/3] Deployment complete!"
+echo "[3/3] Verifying deployment..."
 echo ""
 
 SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" \
@@ -94,10 +92,13 @@ SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" \
     --format="value(status.url)")
 
 echo "=========================================="
-echo "Service URL: ${SERVICE_URL}"
-echo "Health Check: ${SERVICE_URL}/api/health"
+echo " Deployment complete!"
+echo "=========================================="
+echo " Service URL:  ${SERVICE_URL}"
+echo " Health Check: ${SERVICE_URL}/api/health"
+echo " Swagger UI:   ${SERVICE_URL}/swagger-ui.html"
 echo "=========================================="
 echo ""
-echo "Test with:"
-echo "  curl ${SERVICE_URL}/api/health"
+echo " Quick test:"
+echo "   curl -s ${SERVICE_URL}/api/health | jq ."
 echo ""
