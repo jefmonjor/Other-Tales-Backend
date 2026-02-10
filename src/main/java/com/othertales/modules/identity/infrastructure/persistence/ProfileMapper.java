@@ -37,7 +37,6 @@ public class ProfileMapper {
         entity.setMarketingAcceptedAt(profile.getMarketingAcceptedAt());
         entity.setCreatedAt(profile.getCreatedAt());
         entity.setUpdatedAt(profile.getUpdatedAt());
-        entity.setVersion(profile.getVersion());
     }
 
     public Profile toDomain(ProfileEntity entity) {

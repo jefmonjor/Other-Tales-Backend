@@ -11,15 +11,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.*;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import javax.crypto.spec.SecretKeySpec;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 
 /**
@@ -31,7 +28,7 @@ import java.util.List;
  * <ul>
  * <li>Stateless session management (JWT-based)</li>
  * <li>Strict CORS policy (only allowed origins)</li>
- * <li>JWT validation with HS256 signature (Supabase Legacy Secret)</li>
+ * <li>JWT validation via JWKS (supports ES256 from Supabase)</li>
  * <li>Public health endpoints for Cloud Run</li>
  * </ul>
  */
@@ -55,12 +52,10 @@ public class SecurityConfig {
             "Content-Type",
             "X-Requested-With",
             "Accept",
-            "Origin",
-            "X-User-Id");
+            "Origin");
 
-    // CAMBIO 1: Leemos el secreto, no la URI
-    @Value("${SUPABASE_JWT_SECRET}")
-    private String jwtSecret;
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+    private String jwksUri;
 
     @Value("${app.security.jwt.issuer:https://gsslwdruiqtlztupekcd.supabase.co/auth/v1}")
     private String jwtIssuer;
@@ -103,28 +98,29 @@ public class SecurityConfig {
 
                 // OAuth2 Resource Server with custom JWT decoder
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.decoder(jwtDecoder())));
+                        .jwt(jwt -> jwt.decoder(jwtDecoder()))
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/problem+json");
+                            response.setStatus(401);
+                            var body = """
+                                {"type":"about:blank","title":"Unauthorized","status":401,"detail":"AUTH_INVALID_TOKEN","instance":"%s","code":"AUTH_INVALID_TOKEN"}
+                                """.formatted(request.getRequestURI()).trim();
+                            response.getWriter().write(body);
+                        }));
 
         log.info("Security filter chain configured successfully");
         return http.build();
     }
 
     /**
-     * Custom JWT decoder using HS256 (Shared Secret) from Supabase.
+     * JWT decoder using JWKS endpoint from Supabase (supports ES256).
      */
     @Bean
     public JwtDecoder jwtDecoder() {
-        log.info("Configuring JWT decoder with Shared Secret (HS256)");
+        log.info("Configuring JWT decoder with JWKS URI: {}", jwksUri);
         log.info("Expected JWT issuer: {}", jwtIssuer);
 
-        // CAMBIO 2: Decodificar Base64 y crear clave HS256
-        byte[] secretBytes = Base64.getDecoder().decode(jwtSecret);
-        var secretKey = new SecretKeySpec(secretBytes, "HmacSHA256");
-
-        // Construir el decodificador usando la clave secreta en lugar de la URL
-        var jwtDecoder = NimbusJwtDecoder.withSecretKey(secretKey)
-                .macAlgorithm(MacAlgorithm.HS256)
-                .build();
+        var jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwksUri).build();
 
         // Timestamp validator with clock skew tolerance
         var timestampValidator = new JwtTimestampValidator(Duration.ofSeconds(clockSkewSeconds));
@@ -147,7 +143,7 @@ public class SecurityConfig {
 
         jwtDecoder.setJwtValidator(validators);
 
-        log.info("JWT decoder configured correctly with HS256 signature validation");
+        log.info("JWT decoder configured with JWKS validation");
         return jwtDecoder;
     }
 

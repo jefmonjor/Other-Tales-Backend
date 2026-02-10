@@ -2,7 +2,7 @@ package com.othertales.modules.identity.application.usecase;
 
 import com.othertales.modules.identity.application.dto.ConsentResponse;
 import com.othertales.modules.identity.application.dto.UpdateConsentRequest;
-import com.othertales.modules.identity.application.port.AuditLogPort;
+import com.othertales.common.application.port.AuditLogPort;
 import com.othertales.modules.identity.application.port.ConsentLogRepository;
 import com.othertales.modules.identity.application.port.ProfileRepository;
 import com.othertales.modules.identity.domain.ProfileNotFoundException;

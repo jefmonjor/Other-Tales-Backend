@@ -2,6 +2,7 @@ package com.othertales.modules.writing.infrastructure.web;
 
 import com.othertales.modules.writing.application.dto.ChapterResponse;
 import com.othertales.modules.writing.application.dto.CreateChapterRequest;
+import com.othertales.modules.writing.application.dto.ReorderChaptersRequest;
 import com.othertales.modules.writing.application.dto.UpdateChapterRequest;
 import com.othertales.modules.writing.application.usecase.ChapterService;
 import jakarta.validation.Valid;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -75,6 +77,17 @@ public class ChapterController {
         var userId = extractUserId(jwt);
         var chapter = chapterService.updateChapter(chapterId, request, userId);
         return ResponseEntity.ok(chapter);
+    }
+
+    @PatchMapping("/projects/{projectId}/chapters/reorder")
+    public ResponseEntity<List<ChapterResponse>> reorderChapters(
+            @PathVariable UUID projectId,
+            @Valid @RequestBody ReorderChaptersRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        var userId = extractUserId(jwt);
+        var chapters = chapterService.reorderChapters(projectId, request, userId);
+        return ResponseEntity.ok(chapters);
     }
 
     @DeleteMapping("/chapters/{chapterId}")

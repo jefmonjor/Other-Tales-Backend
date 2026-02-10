@@ -1,4 +1,4 @@
-package com.othertales.modules.identity.application.port;
+package com.othertales.common.application.port;
 
 import java.util.Map;
 import java.util.UUID;

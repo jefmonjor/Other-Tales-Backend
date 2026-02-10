@@ -2,6 +2,7 @@ package com.othertales.modules.writing.application.usecase;
 
 import com.othertales.modules.writing.application.dto.ChapterResponse;
 import com.othertales.modules.writing.application.dto.CreateChapterRequest;
+import com.othertales.modules.writing.application.dto.ReorderChaptersRequest;
 import com.othertales.modules.writing.application.dto.UpdateChapterRequest;
 import com.othertales.modules.writing.application.port.ChapterRepository;
 import com.othertales.modules.writing.application.port.ProjectRepository;
@@ -63,6 +64,7 @@ public class ChapterService {
 
         var chapter = Chapter.create(projectId, request.title(), request.content(), orderIndex);
         var saved = chapterRepository.save(chapter);
+        syncProjectWordCount(projectId, userId);
         return toResponse(saved);
     }
 
@@ -81,7 +83,32 @@ public class ChapterService {
         }
 
         var saved = chapterRepository.save(chapter);
+        syncProjectWordCount(chapter.getProjectId(), userId);
         return toResponse(saved);
+    }
+
+    @Transactional
+    public List<ChapterResponse> reorderChapters(UUID projectId, ReorderChaptersRequest request, UUID userId) {
+        verifyProjectOwnership(projectId, userId);
+
+        var chapters = chapterRepository.findByProjectIdOrderByOrderIndex(projectId);
+        var chapterMap = chapters.stream()
+                .collect(java.util.stream.Collectors.toMap(Chapter::getId, c -> c));
+
+        for (var i = 0; i < request.orderedChapterIds().size(); i++) {
+            var chapterId = request.orderedChapterIds().get(i);
+            var chapter = chapterMap.get(chapterId);
+            if (chapter == null) {
+                throw new ChapterNotFoundException(chapterId);
+            }
+            chapter.reorder(i);
+            chapterRepository.save(chapter);
+        }
+
+        return chapterRepository.findByProjectIdOrderByOrderIndex(projectId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional
@@ -90,7 +117,18 @@ public class ChapterService {
                 .orElseThrow(() -> new ChapterNotFoundException(chapterId));
 
         verifyProjectOwnership(chapter.getProjectId(), userId);
+        var projectId = chapter.getProjectId();
         chapterRepository.deleteById(chapterId);
+        syncProjectWordCount(projectId, userId);
+    }
+
+    private void syncProjectWordCount(UUID projectId, UUID userId) {
+        var chapters = chapterRepository.findByProjectIdOrderByOrderIndex(projectId);
+        var totalWords = chapters.stream().mapToInt(Chapter::getWordCount).sum();
+        var project = projectRepository.findByIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ProjectNotFoundException(projectId));
+        project.updateCurrentWordCount(totalWords);
+        projectRepository.save(project);
     }
 
     private void verifyProjectOwnership(UUID projectId, UUID userId) {

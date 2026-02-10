@@ -9,6 +9,7 @@ public record ProjectSummaryResponse(
         String genre,
         int currentWordCount,
         int targetWordCount,
+        String coverUrl,
         String status,
         Instant updatedAt
 ) {}

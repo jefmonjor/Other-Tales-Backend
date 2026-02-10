@@ -14,6 +14,7 @@ public class Chapter {
     private ChapterStatus status;
     private Instant createdAt;
     private Instant updatedAt;
+    private Long version;
 
     private Chapter() {}
 
@@ -27,6 +28,7 @@ public class Chapter {
         chapter.status = ChapterStatus.DRAFT;
         chapter.createdAt = Instant.now();
         chapter.updatedAt = chapter.createdAt;
+        chapter.version = 0L;
         return chapter;
     }
 
@@ -38,7 +40,8 @@ public class Chapter {
             int orderIndex,
             ChapterStatus status,
             Instant createdAt,
-            Instant updatedAt
+            Instant updatedAt,
+            Long version
     ) {
         var chapter = new Chapter();
         chapter.id = id;
@@ -49,6 +52,7 @@ public class Chapter {
         chapter.status = status;
         chapter.createdAt = createdAt;
         chapter.updatedAt = updatedAt;
+        chapter.version = version;
         return chapter;
     }
 
@@ -84,6 +88,7 @@ public class Chapter {
     public ChapterStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public Long getVersion() { return version; }
 
     @Override
     public boolean equals(Object o) {

@@ -1,8 +1,6 @@
-package com.othertales.modules.identity.infrastructure.persistence;
+package com.othertales.common.infrastructure.persistence;
 
-import com.othertales.common.infrastructure.persistence.AuditLogEntity;
-import com.othertales.common.infrastructure.persistence.AuditLogJpaRepository;
-import com.othertales.modules.identity.application.port.AuditLogPort;
+import com.othertales.common.application.port.AuditLogPort;
 import org.springframework.stereotype.Repository;
 
 import java.util.Map;

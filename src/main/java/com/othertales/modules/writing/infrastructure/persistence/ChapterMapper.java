@@ -38,7 +38,8 @@ public class ChapterMapper {
                 entity.getOrderIndex(),
                 toDomainStatus(entity.getStatus()),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt()
+                entity.getUpdatedAt(),
+                entity.getVersion()
         );
     }
 
