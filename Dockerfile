@@ -1,26 +1,28 @@
-# --- ETAPA 1: BUILD ---
-# Usamos una imagen con Maven ya instalado para no depender de archivos locales
+# --- STAGE 1: BUILD ---
 FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
 
 WORKDIR /app
 
-# Copiamos archivos de dependencias
+# Cache dependencies layer (only re-downloads when pom.xml changes)
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy source and build
 COPY src ./src
+RUN mvn clean package -DskipTests -B
 
-# COMPILAMOS SALTANDO LOS TESTS (La clave para arreglar tu error local)
-RUN mvn clean package -DskipTests
-
-# --- ETAPA 2: RUNTIME ---
+# --- STAGE 2: RUNTIME ---
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Copiamos el JAR generado
+# Create non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 COPY --from=builder /app/target/*.jar app.jar
 
-# Exponemos el puerto
 EXPOSE 8080
 
-# Arrancamos la app
+# Cloud Run sets PORT env var; Spring reads it from application.yml
 ENTRYPOINT ["java", "-jar", "app.jar"]
