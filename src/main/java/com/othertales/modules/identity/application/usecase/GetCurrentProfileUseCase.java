@@ -34,8 +34,11 @@ public class GetCurrentProfileUseCase {
                 profile.getAvatarUrl(),
                 profile.getPlanType().name(),
                 profile.isTermsAccepted(),
+                profile.getTermsAcceptedAt(),
                 profile.isPrivacyAccepted(),
+                profile.getPrivacyAcceptedAt(),
                 profile.isMarketingAccepted(),
+                profile.getMarketingAcceptedAt(),
                 profile.getCreatedAt()
         );
     }

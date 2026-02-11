@@ -105,6 +105,16 @@ public class Project {
         this.updatedAt = Instant.now();
     }
 
+    public void updateCoverUrl(String coverUrl) {
+        this.coverUrl = coverUrl;
+        this.updatedAt = Instant.now();
+    }
+
+    public void updateStatus(ProjectStatus newStatus) {
+        this.status = newStatus;
+        this.updatedAt = Instant.now();
+    }
+
     public void publish() {
         this.status = ProjectStatus.PUBLISHED;
         this.updatedAt = Instant.now();

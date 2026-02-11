@@ -41,8 +41,11 @@ public class UpdateProfileUseCase {
                 saved.getAvatarUrl(),
                 saved.getPlanType().name(),
                 saved.isTermsAccepted(),
+                saved.getTermsAcceptedAt(),
                 saved.isPrivacyAccepted(),
+                saved.getPrivacyAcceptedAt(),
                 saved.isMarketingAccepted(),
+                saved.getMarketingAcceptedAt(),
                 saved.getCreatedAt()
         );
     }

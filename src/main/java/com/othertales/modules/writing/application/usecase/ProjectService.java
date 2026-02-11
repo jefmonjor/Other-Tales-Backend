@@ -8,6 +8,7 @@ import com.othertales.modules.writing.application.dto.UpdateProjectRequest;
 import com.othertales.modules.writing.application.port.ProjectRepository;
 import com.othertales.modules.writing.domain.Project;
 import com.othertales.modules.writing.domain.ProjectNotFoundException;
+import com.othertales.modules.writing.domain.ProjectStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,6 +88,13 @@ public class ProjectService {
         }
         if (request.targetWordCount() != null) {
             project.updateTargetWordCount(request.targetWordCount());
+        }
+        if (request.coverUrl() != null) {
+            project.updateCoverUrl(request.coverUrl());
+        }
+        if (request.status() != null) {
+            var newStatus = ProjectStatus.valueOf(request.status().toUpperCase());
+            project.updateStatus(newStatus);
         }
 
         var saved = projectRepository.save(project);

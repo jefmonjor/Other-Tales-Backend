@@ -73,6 +73,11 @@ public class Chapter {
         this.updatedAt = Instant.now();
     }
 
+    public void updateStatus(ChapterStatus newStatus) {
+        this.status = newStatus;
+        this.updatedAt = Instant.now();
+    }
+
     public int getWordCount() {
         if (content == null || content.isBlank()) {
             return 0;
