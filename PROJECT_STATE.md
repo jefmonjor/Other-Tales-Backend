@@ -1,8 +1,8 @@
 # Project State & Progress
 
 ## Current Status
-- **Phase:** 1 (Foundation) - CLOSING
-- **Active Epic:** EPIC-1: Foundation & Infra setup
+- **Phase:** 2 (Writing Core) - ACTIVE
+- **Active Epic:** EPIC-2: Chapter Management & Editor
 - **Architecture:** Hybrid Pivot - OAuth2 Resource Server with Supabase Auth
 
 ---
@@ -10,10 +10,11 @@
 ## Completed Milestones
 
 ### Infrastructure
-- [x] Project Scaffolding (Maven, Spring Boot 3.5.x)
+- [x] Project Scaffolding (Maven, Spring Boot 3.4.x)
 - [x] Docker Environment (Testcontainers for tests)
 - [x] Flyway Migrations (V1-V10)
 - [x] Global Exception Handling (RFC 7807 ProblemDetails)
+- [x] Security: ES256 Support for Supabase JWTs
 
 ### Identity Module
 - [x] **PIVOT: Migration to Supabase**
@@ -32,7 +33,9 @@
 - [x] Chapters CRUD
   - ChapterEntity with ManyToOne to ProjectEntity
   - `GET /api/v1/projects/{projectId}/chapters`
-  - `POST /api/v1/chapters` (create/update)
+  - `POST /api/v1/chapters` (create)
+  - `PUT /api/v1/chapters/{id}` (update content/title)
+  - `DELETE /api/v1/chapters/{id}`
   - Ownership validation (403 on mismatch)
 
 ### Common Module
@@ -44,21 +47,20 @@
 
 ## Pending / Next Phase
 
-### Phase 2: Writing Core (Upcoming)
+### Phase 2: Writing Core (Active)
 - [ ] Rich text editor integration (content sync)
-- [ ] Chapter reordering (drag & drop)
-- [ ] Word count tracking per chapter
+- [ ] Chapter reordering (drag & drop endpoints)
+- [ ] Word count tracking per chapter (implementation pending)
 - [ ] Project statistics dashboard
 
 ### Pending Decisions
-- Profile synchronization strategy (when to create profiles from Supabase auth)
-- JWT claims extraction for user context (currently using `X-User-Id` header)
+- Profile synchronization strategy (Webhooks vs Lazy Creation)
 
 ---
 
 ## Architecture Notes
 - Authentication is delegated to Supabase Auth (`auth.users`).
-- Backend validates JWTs using Supabase's JWKS endpoint.
+- Backend validates JWTs using Supabase's JWKS endpoint (Supports RS256 & ES256).
 - User profiles are stored in `public.profiles` and linked by UUID.
 - Error responses follow RFC 7807 (ProblemDetails) standard.
 - Domain Services allowed for simple CRUD; UseCases reserved for complex orchestration.
