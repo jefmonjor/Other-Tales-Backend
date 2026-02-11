@@ -1,9 +1,9 @@
 # API & DB CONTRACT — Other Tales Backend
 
-> **Version:** 1.0.0 | **Fecha:** 2026-02-06 | **Estado:** DEFINITIVO
+> **Version:** 1.1.0 | **Fecha:** 2026-02-11 | **Estado:** VIVO
 > **Audiencia:** Equipo Frontend, QA, DevOps
 > **Base URL:** `https://<host>/api/v1`
-> **Autenticación:** Bearer Token (Supabase JWT) en header `Authorization`
+> **Autenticación:** Bearer Token (Supabase JWT - Soporte RS256 y ES256)
 
 ---
 
