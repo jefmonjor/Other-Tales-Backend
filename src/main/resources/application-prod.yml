@@ -29,7 +29,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+          # Usa la misma variable que deploy.sh
+          jwk-set-uri: ${SUPABASE_JWKS_URI}
+
+app:
+  security:
+    jwt:
+      issuer: ${APP_SECURITY_JWT_ISSUER:https://gsslwdruiqtlztupekcd.supabase.co/auth/v1}
+      clock-skew-seconds: 60
 
 server:
   port: ${PORT:8080}
