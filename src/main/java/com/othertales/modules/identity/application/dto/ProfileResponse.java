@@ -10,7 +10,10 @@ public record ProfileResponse(
         String avatarUrl,
         String planType,
         boolean termsAccepted,
+        Instant termsAcceptedAt,
         boolean privacyAccepted,
+        Instant privacyAcceptedAt,
         boolean marketingAccepted,
+        Instant marketingAcceptedAt,
         Instant createdAt
 ) {}

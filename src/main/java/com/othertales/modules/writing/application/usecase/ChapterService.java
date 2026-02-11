@@ -8,6 +8,7 @@ import com.othertales.modules.writing.application.port.ChapterRepository;
 import com.othertales.modules.writing.application.port.ProjectRepository;
 import com.othertales.modules.writing.domain.Chapter;
 import com.othertales.modules.writing.domain.ChapterAccessDeniedException;
+import com.othertales.modules.writing.domain.ChapterStatus;
 import com.othertales.modules.writing.domain.ChapterNotFoundException;
 import com.othertales.modules.writing.domain.ProjectNotFoundException;
 import org.springframework.stereotype.Service;
@@ -81,6 +82,10 @@ public class ChapterService {
         if (request.content() != null) {
             chapter.updateContent(request.content());
         }
+        if (request.status() != null) {
+            var newStatus = ChapterStatus.valueOf(request.status().toUpperCase());
+            chapter.updateStatus(newStatus);
+        }
 
         var saved = chapterRepository.save(chapter);
         syncProjectWordCount(chapter.getProjectId(), userId);
@@ -145,6 +150,7 @@ public class ChapterService {
                 chapter.getContent(),
                 chapter.getOrderIndex(),
                 chapter.getWordCount(),
+                chapter.getStatus().name(),
                 chapter.getCreatedAt(),
                 chapter.getUpdatedAt()
         );

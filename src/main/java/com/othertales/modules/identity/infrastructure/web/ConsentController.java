@@ -2,7 +2,10 @@ package com.othertales.modules.identity.infrastructure.web;
 
 import com.othertales.modules.identity.application.dto.ConsentResponse;
 import com.othertales.modules.identity.application.dto.UpdateConsentRequest;
+import com.othertales.modules.identity.application.port.ProfileRepository;
 import com.othertales.modules.identity.application.usecase.UpdateConsentUseCase;
+import com.othertales.modules.identity.domain.ConsentType;
+import com.othertales.modules.identity.domain.ProfileNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -10,11 +13,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,20 +34,34 @@ public class ConsentController {
     private static final Logger log = LoggerFactory.getLogger(ConsentController.class);
 
     private final UpdateConsentUseCase updateConsentUseCase;
+    private final ProfileRepository profileRepository;
 
-    public ConsentController(UpdateConsentUseCase updateConsentUseCase) {
+    public ConsentController(UpdateConsentUseCase updateConsentUseCase, ProfileRepository profileRepository) {
         this.updateConsentUseCase = updateConsentUseCase;
+        this.profileRepository = profileRepository;
     }
 
-    /**
-     * Update user consent preference.
-     * Creates an immutable audit trail for GDPR compliance.
-     *
-     * @param jwt     The authenticated user's JWT token
-     * @param request The consent update request
-     * @param httpRequest HTTP request for extracting IP and User-Agent
-     * @return Updated consent status
-     */
+    @GetMapping("/consent")
+    public ResponseEntity<List<ConsentResponse>> getCurrentConsent(@AuthenticationPrincipal Jwt jwt) {
+        var userId = UUID.fromString(jwt.getSubject());
+        var profile = profileRepository.findById(userId)
+                .orElseThrow(() -> new ProfileNotFoundException(userId));
+
+        var consents = Arrays.stream(ConsentType.values())
+                .map(type -> new ConsentResponse(
+                        type,
+                        profile.getConsentValue(type),
+                        switch (type) {
+                            case TERMS_OF_SERVICE -> profile.getTermsAcceptedAt();
+                            case PRIVACY_POLICY -> profile.getPrivacyAcceptedAt();
+                            case MARKETING_COMMUNICATIONS -> profile.getMarketingAcceptedAt();
+                        }
+                ))
+                .toList();
+
+        return ResponseEntity.ok(consents);
+    }
+
     @PostMapping("/consent")
     public ResponseEntity<ConsentResponse> updateConsent(
             @AuthenticationPrincipal Jwt jwt,

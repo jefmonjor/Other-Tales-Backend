@@ -10,6 +10,7 @@ public record ChapterResponse(
         String content,
         int sortOrder,
         int wordCount,
+        String status,
         Instant createdAt,
         Instant updatedAt
 ) {}

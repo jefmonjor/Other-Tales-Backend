@@ -14,5 +14,10 @@ public record UpdateProjectRequest(
         String genre,
 
         @Min(value = 1, message = "{project.targetWordCount.min}")
-        Integer targetWordCount
+        Integer targetWordCount,
+
+        @Size(max = 500, message = "Cover URL must not exceed 500 characters")
+        String coverUrl,
+
+        String status
 ) {}
