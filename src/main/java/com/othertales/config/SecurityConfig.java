@@ -39,9 +39,8 @@ public class SecurityConfig {
     private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     private static final List<String> ALLOWED_ORIGINS = List.of(
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "https://other-tales-app.vercel.app", // He corregido tu URL de Vercel (la que pusiste en el chat)
+            "http://localhost:*",
+            "https://other-tales-app.vercel.app",
             "https://*.vercel.app");
 
     private static final List<String> ALLOWED_METHODS = List.of(
@@ -102,9 +101,48 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/problem+json");
                             response.setStatus(401);
+
+                            var authHeader = request.getHeader("Authorization");
+                            String errorCode;
+                            String detail;
+
+                            if (authHeader == null || authHeader.isBlank()) {
+                                errorCode = "AUTH_MISSING_TOKEN";
+                                detail = "No Authorization header present. Send: Authorization: Bearer <token>";
+                            } else if (!authHeader.startsWith("Bearer ")) {
+                                errorCode = "AUTH_MALFORMED_HEADER";
+                                detail = "Authorization header must start with 'Bearer '. Got: " + authHeader.substring(0, Math.min(authHeader.length(), 15)) + "...";
+                            } else {
+                                var cause = authException.getCause() != null ? authException.getCause() : authException;
+                                var msg = cause.getMessage() != null ? cause.getMessage() : "Unknown";
+
+                                if (msg.contains("expired") || msg.contains("Jwt expired")) {
+                                    errorCode = "AUTH_TOKEN_EXPIRED";
+                                    detail = "JWT token has expired. Request a new token from Supabase.";
+                                } else if (msg.contains("iss claim") || msg.contains("issuer")) {
+                                    errorCode = "AUTH_INVALID_ISSUER";
+                                    detail = "JWT issuer does not match. Expected: " + jwtIssuer;
+                                } else if (msg.contains("sub claim") || msg.contains("subject")) {
+                                    errorCode = "AUTH_MISSING_SUBJECT";
+                                    detail = "JWT must contain a 'sub' claim (user ID).";
+                                } else if (msg.contains("signature") || msg.contains("Signed JWT rejected") || msg.contains("JWK")) {
+                                    errorCode = "AUTH_INVALID_SIGNATURE";
+                                    detail = "JWT signature verification failed. Ensure the token is from Supabase.";
+                                } else {
+                                    errorCode = "AUTH_INVALID_TOKEN";
+                                    detail = msg;
+                                }
+                            }
+
+                            log.warn("JWT auth failed [{}] on {}: {}", errorCode, request.getRequestURI(), detail);
+
                             var body = """
-                                {"type":"about:blank","title":"Unauthorized","status":401,"detail":"AUTH_INVALID_TOKEN","instance":"%s","code":"AUTH_INVALID_TOKEN"}
-                                """.formatted(request.getRequestURI()).trim();
+                                {"type":"about:blank","title":"Unauthorized","status":401,"detail":"%s","instance":"%s","code":"%s"}
+                                """.formatted(
+                                    detail.replace("\"", "'"),
+                                    request.getRequestURI(),
+                                    errorCode
+                                ).trim();
                             response.getWriter().write(body);
                         }));
 

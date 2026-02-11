@@ -110,7 +110,7 @@ logging:
   level:
     root: INFO
     com.othertales: INFO
-    org.springframework.security: WARN
+    org.springframework.security: DEBUG
     org.springframework.web: INFO
     org.springframework.boot.web.embedded: INFO
     org.hibernate: WARN
