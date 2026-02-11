@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
@@ -111,7 +112,8 @@ public class SecurityConfig {
                                 detail = "No Authorization header present. Send: Authorization: Bearer <token>";
                             } else if (!authHeader.startsWith("Bearer ")) {
                                 errorCode = "AUTH_MALFORMED_HEADER";
-                                detail = "Authorization header must start with 'Bearer '. Got: " + authHeader.substring(0, Math.min(authHeader.length(), 15)) + "...";
+                                detail = "Authorization header must start with 'Bearer '. Got: "
+                                        + authHeader.substring(0, Math.min(authHeader.length(), 15)) + "...";
                             } else {
                                 var cause = authException.getCause() != null ? authException.getCause() : authException;
                                 var msg = cause.getMessage() != null ? cause.getMessage() : "Unknown";
@@ -125,7 +127,8 @@ public class SecurityConfig {
                                 } else if (msg.contains("sub claim") || msg.contains("subject")) {
                                     errorCode = "AUTH_MISSING_SUBJECT";
                                     detail = "JWT must contain a 'sub' claim (user ID).";
-                                } else if (msg.contains("signature") || msg.contains("Signed JWT rejected") || msg.contains("JWK")) {
+                                } else if (msg.contains("signature") || msg.contains("Signed JWT rejected")
+                                        || msg.contains("JWK")) {
                                     errorCode = "AUTH_INVALID_SIGNATURE";
                                     detail = "JWT signature verification failed. Ensure the token is from Supabase.";
                                 } else {
@@ -137,12 +140,13 @@ public class SecurityConfig {
                             log.warn("JWT auth failed [{}] on {}: {}", errorCode, request.getRequestURI(), detail);
 
                             var body = """
-                                {"type":"about:blank","title":"Unauthorized","status":401,"detail":"%s","instance":"%s","code":"%s"}
-                                """.formatted(
-                                    detail.replace("\"", "'"),
-                                    request.getRequestURI(),
-                                    errorCode
-                                ).trim();
+                                    {"type":"about:blank","title":"Unauthorized","status":401,"detail":"%s","instance":"%s","code":"%s"}
+                                    """
+                                    .formatted(
+                                            detail.replace("\"", "'"),
+                                            request.getRequestURI(),
+                                            errorCode)
+                                    .trim();
                             response.getWriter().write(body);
                         }));
 
@@ -158,7 +162,12 @@ public class SecurityConfig {
         log.info("Configuring JWT decoder with JWKS URI: {}", jwksUri);
         log.info("Expected JWT issuer: {}", jwtIssuer);
 
-        var jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwksUri).build();
+        // Spring Boot defaults to RS256 only. Supabase signs with ES256.
+        // We must explicitly enable ES256 (and keep RS256 as fallback).
+        var jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwksUri)
+                .jwsAlgorithm(SignatureAlgorithm.ES256)
+                .jwsAlgorithm(SignatureAlgorithm.RS256)
+                .build();
 
         // Timestamp validator with clock skew tolerance
         var timestampValidator = new JwtTimestampValidator(Duration.ofSeconds(clockSkewSeconds));

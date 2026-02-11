@@ -1,7 +1,5 @@
 package com.othertales.common.domain;
 
-import java.util.UUID;
-
 /**
  * Base exception for all "not found" domain errors.
  * Allows GlobalExceptionHandler to handle all modules without direct imports.
