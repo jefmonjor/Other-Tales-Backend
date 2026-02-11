@@ -5,7 +5,9 @@ import com.othertales.modules.writing.application.dto.ProjectListResponse;
 import com.othertales.modules.writing.application.dto.ProjectResponse;
 import com.othertales.modules.writing.application.dto.UpdateProjectRequest;
 import com.othertales.modules.writing.application.usecase.ProjectService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,9 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 /**
- * AUDIT FIX #2 (FASE 1.2): Replaced @RequestHeader("X-User-Id") with @AuthenticationPrincipal Jwt.
+ * AUDIT FIX #2 (FASE 1.2): Replaced @RequestHeader("X-User-Id")
+ * with @AuthenticationPrincipal Jwt.
  * AUDIT FIX #4 (FASE 1.4): Added PUT endpoint for project updates.
- * AUDIT FIX #9 (FASE 2.3): Controller delegates to ProjectService, not ProjectRepository.
+ * AUDIT FIX #9 (FASE 2.3): Controller delegates to ProjectService, not
+ * ProjectRepository.
  */
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -40,8 +44,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<ProjectResponse> createProject(
             @Valid @RequestBody CreateProjectRequest request,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         var userId = extractUserId(jwt);
         var response = projectService.create(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -52,29 +55,56 @@ public class ProjectController {
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String sortBy
-    ) {
+            @RequestParam(required = false) String sortBy,
+            HttpServletRequest request) {
         var userId = extractUserId(jwt);
         var response = projectService.listByUser(userId, page, size, sortBy);
-        return ResponseEntity.ok(response);
+
+        // ETag basado en hash del contenido para evitar retransmisiones innecesarias
+        String etag = "\"" + Integer.toHexString(response.hashCode()) + "\"";
+        String ifNoneMatch = request.getHeader("If-None-Match");
+        if (etag.equals(ifNoneMatch)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                    .cacheControl(CacheControl.noCache().cachePrivate())
+                    .eTag(etag)
+                    .build();
+        }
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache().cachePrivate())
+                .eTag(etag)
+                .body(response);
     }
 
     @GetMapping("/{projectId}")
     public ResponseEntity<ProjectResponse> getProject(
             @PathVariable UUID projectId,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletRequest request) {
         var userId = extractUserId(jwt);
         var response = projectService.getById(projectId, userId);
-        return ResponseEntity.ok(response);
+
+        // ETag basado en updatedAt del proyecto
+        String etag = "\"" + response.updatedAt().toEpochMilli() + "\"";
+        String ifNoneMatch = request.getHeader("If-None-Match");
+        if (etag.equals(ifNoneMatch)) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                    .cacheControl(CacheControl.noCache().cachePrivate())
+                    .eTag(etag)
+                    .build();
+        }
+
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noCache().cachePrivate())
+                .eTag(etag)
+                .body(response);
     }
 
     @PutMapping("/{projectId}")
     public ResponseEntity<ProjectResponse> updateProject(
             @PathVariable UUID projectId,
             @Valid @RequestBody UpdateProjectRequest request,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         var userId = extractUserId(jwt);
         var response = projectService.update(projectId, userId, request);
         return ResponseEntity.ok(response);
@@ -83,8 +113,7 @@ public class ProjectController {
     @DeleteMapping("/{projectId}")
     public ResponseEntity<Void> deleteProject(
             @PathVariable UUID projectId,
-            @AuthenticationPrincipal Jwt jwt
-    ) {
+            @AuthenticationPrincipal Jwt jwt) {
         var userId = extractUserId(jwt);
         projectService.delete(projectId, userId);
         return ResponseEntity.noContent().build();

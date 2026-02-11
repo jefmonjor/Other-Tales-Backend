@@ -18,12 +18,12 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-    show-sql: false
+    show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         default_schema: public
-        format_sql: false
+        format_sql: true
         jdbc:
           time_zone: UTC
     defer-datasource-initialization: false
@@ -114,5 +114,6 @@ logging:
     org.springframework.web: INFO
     org.springframework.boot.web.embedded: INFO
     org.hibernate: WARN
-    org.hibernate.SQL: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
     com.zaxxer.hikari: INFO
