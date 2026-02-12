@@ -39,8 +39,8 @@ public class ChapterMapper {
                 toDomainStatus(entity.getStatus()),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                entity.getVersion()
-        );
+                null, // publishedAt not yet persisted
+                entity.getVersion());
     }
 
     private ChapterEntity.ChapterStatusEntity toEntityStatus(ChapterStatus status) {

@@ -14,9 +14,11 @@ public class Chapter {
     private ChapterStatus status;
     private Instant createdAt;
     private Instant updatedAt;
+    private Instant publishedAt;
     private Long version;
 
-    private Chapter() {}
+    private Chapter() {
+    }
 
     public static Chapter create(UUID projectId, String title, String content, Integer orderIndex) {
         var chapter = new Chapter();
@@ -28,6 +30,7 @@ public class Chapter {
         chapter.status = ChapterStatus.DRAFT;
         chapter.createdAt = Instant.now();
         chapter.updatedAt = chapter.createdAt;
+        chapter.publishedAt = null;
         chapter.version = 0L;
         return chapter;
     }
@@ -41,8 +44,8 @@ public class Chapter {
             ChapterStatus status,
             Instant createdAt,
             Instant updatedAt,
-            Long version
-    ) {
+            Instant publishedAt,
+            Long version) {
         var chapter = new Chapter();
         chapter.id = id;
         chapter.projectId = projectId;
@@ -52,6 +55,7 @@ public class Chapter {
         chapter.status = status;
         chapter.createdAt = createdAt;
         chapter.updatedAt = updatedAt;
+        chapter.publishedAt = publishedAt;
         chapter.version = version;
         return chapter;
     }
@@ -78,6 +82,12 @@ public class Chapter {
         this.updatedAt = Instant.now();
     }
 
+    public void publish() {
+        this.status = ChapterStatus.PUBLISHED;
+        this.publishedAt = Instant.now();
+        this.updatedAt = this.publishedAt;
+    }
+
     public int getWordCount() {
         if (content == null || content.isBlank()) {
             return 0;
@@ -85,20 +95,52 @@ public class Chapter {
         return content.trim().split("\\s+").length;
     }
 
-    public UUID getId() { return id; }
-    public UUID getProjectId() { return projectId; }
-    public String getTitle() { return title; }
-    public String getContent() { return content; }
-    public int getOrderIndex() { return orderIndex; }
-    public ChapterStatus getStatus() { return status; }
-    public Instant getCreatedAt() { return createdAt; }
-    public Instant getUpdatedAt() { return updatedAt; }
-    public Long getVersion() { return version; }
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getProjectId() {
+        return projectId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public int getOrderIndex() {
+        return orderIndex;
+    }
+
+    public ChapterStatus getStatus() {
+        return status;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public Instant getPublishedAt() {
+        return publishedAt;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Chapter chapter = (Chapter) o;
         return Objects.equals(id, chapter.id);
     }

@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -62,9 +63,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ProblemDetail handleSpringAccessDenied(
             org.springframework.security.access.AccessDeniedException ex,
-            HttpServletRequest request
-    ) {
+            HttpServletRequest request) {
         return buildProblem(HttpStatus.FORBIDDEN, "Access Denied", ErrorCodes.AUTH_UNAUTHORIZED, request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        log.warn("Type mismatch error: {}", ex.getMessage());
+        return buildProblem(HttpStatus.BAD_REQUEST, "Invalid Argument Type", ErrorCodes.VALIDATION_FAILED, request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -90,10 +96,17 @@ public class GlobalExceptionHandler {
         return buildProblem(HttpStatus.CONFLICT, "Data Conflict", code, request);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+        log.warn("Illegal argument: {}", ex.getMessage());
+        return buildProblem(HttpStatus.BAD_REQUEST, "Invalid Argument", ErrorCodes.VALIDATION_FAILED, request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGenericException(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
-        return buildProblem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", ErrorCodes.INTERNAL_ERROR, request);
+        return buildProblem(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", ErrorCodes.INTERNAL_ERROR,
+                request);
     }
 
     private ProblemDetail buildProblem(HttpStatus status, String title, String code, HttpServletRequest request) {
@@ -118,5 +131,6 @@ public class GlobalExceptionHandler {
         };
     }
 
-    public record FieldError(String field, String code) {}
+    public record FieldError(String field, String code) {
+    }
 }
