@@ -30,3 +30,8 @@ app:
   security:
     jwt:
       issuer: https://example.com/auth/v1 # Dummy issuer
+
+supabase:
+  url: https://mock.supabase.co
+  key: mock-key
+  bucket: mock-bucket

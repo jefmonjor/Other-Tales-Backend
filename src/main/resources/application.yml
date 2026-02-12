@@ -60,6 +60,14 @@ app:
       clock-skew-seconds: 60
 
 # =============================================================================
+# SUPABASE STORAGE CONFIGURATION
+# =============================================================================
+supabase:
+  url: ${SUPABASE_URL}
+  key: ${SUPABASE_KEY}
+  bucket: ${SUPABASE_BUCKET:project-images}
+
+# =============================================================================
 # SERVER CONFIGURATION - CRITICAL FOR CLOUD RUN
 # =============================================================================
 server:

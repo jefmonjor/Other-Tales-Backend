@@ -9,6 +9,8 @@ set -euo pipefail
 # -----------------------------------------------------------------------------
 PROJECT_ID="${GCP_PROJECT_ID:?ERROR: Falta la variable GCP_PROJECT_ID}"
 DB_PASSWORD="${SUPABASE_DB_PASSWORD:?ERROR: Falta la variable SUPABASE_DB_PASSWORD}"
+SUPABASE_URL="${SUPABASE_URL:?ERROR: Falta la variable SUPABASE_URL}"
+SUPABASE_KEY="${SUPABASE_KEY:?ERROR: Falta la variable SUPABASE_KEY}"
 
 REGION="${GCP_REGION:-europe-west1}"
 SERVICE_NAME="other-tales-api"
@@ -53,6 +55,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --set-env-vars "SPRING_DATASOURCE_PASSWORD=$DB_PASSWORD" \
   --set-env-vars "SUPABASE_JWKS_URI=$JWKS_URI" \
   --set-env-vars "JWT_ISSUER=$JWT_ISSUER" \
+  --set-env-vars "SUPABASE_URL=${SUPABASE_URL},SUPABASE_KEY=${SUPABASE_KEY},SUPABASE_BUCKET=project-images" \
   --min-instances 1 \
   --no-cpu-throttling \
   --set-env-vars "JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:+UseStringDeduplication"
